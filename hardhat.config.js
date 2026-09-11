@@ -5,21 +5,17 @@ const privateKey = process.env.PRIVATE_KEY;
 const isValidKey = privateKey && privateKey.length === 66 && privateKey.startsWith("0x") || privateKey && privateKey.length === 64;
 const accountArr = isValidKey ? [(privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`)] : [];
 
-// Gunakan multiple fallback URL langsung di code jika .env kosong
-const fallbackSepoliaUrl = "https://rpc.sepolia.org";
+// Alchemy/Infura public fallback yang lebih kebal timeout ketimbang node generic
+const stableSepoliaUrl = "https://eth-sepolia.public.blastapi.io";
 
 module.exports = {
   solidity: "0.8.20",
   networks: {
     sepolia: {
-      url: process.env.SEPOLIA_URL || fallbackSepoliaUrl,
+      url: process.env.SEPOLIA_URL || stableSepoliaUrl,
       accounts: accountArr,
       chainId: 11155111,
-      timeout: 100000
-    },
-    polygonAmoy: {
-      url: process.env.ALCHEMY_AMOY_URL || "https://rpc-amoy.polygon.technology",
-      accounts: accountArr,
+      timeout: 1000000 // Timeout sangat panjang
     }
   }
 };
