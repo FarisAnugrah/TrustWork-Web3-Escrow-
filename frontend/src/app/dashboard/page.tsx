@@ -1,8 +1,8 @@
 'use client';
-import { useAccount, useContractRead } from 'wagmi';
+import { useAccount, useContractRead, useBalance } from 'wagmi';
 import { prepareWriteContract, writeContract, waitForTransaction } from '@wagmi/core';
 import { TrustWorkABI } from '@/lib/TrustWorkABI';
-import { TRUSTWORK_ADDRESS } from '@/lib/config';
+import { TRUSTWORK_ADDRESS, USDC_ADDRESS } from '@/lib/config';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -17,13 +17,19 @@ export default function Dashboard() {
     watch: true,
   });
 
-  // Ambil data proyek ID 0 (MVP Hackathon ambil 1 proyek saja untuk demo)
   const { data: project } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
     functionName: 'projects',
     args: [0n],
     enabled: Number(projectCount) > 0,
+    watch: true,
+  });
+
+  // Ambil saldo mUSDC khusus untuk wallet yang sedang terhubung
+  const { data: usdcBalance } = useBalance({
+    address: address,
+    token: USDC_ADDRESS,
     watch: true,
   });
 
@@ -50,48 +56,115 @@ export default function Dashboard() {
   const isWorker = project && address && (project as any)[1] === address;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12">
-      <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-12 border-b border-white/10 pb-8">
-          <Link href="/" className="text-3xl font-bold">Dashboard</Link>
-          <Link href="/create" className="bg-white text-black px-6 py-3 font-bold rounded-xl">+ New Escrow</Link>
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative selection:bg-purple-900 selection:text-white">
+      <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6 border-b border-white/10 pb-8">
+          <div>
+            <Link href="/" className="text-sm text-gray-500 hover:text-white mb-2 inline-block transition-colors">← Home</Link>
+            <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+              Dashboard
+              {address && (
+                <span className="text-xs px-3 py-1 rounded-full bg-white/10 border border-white/10 text-purple-300 font-mono">
+                  {address.slice(0, 6)}...{address.slice(-4)}
+                </span>
+              )}
+            </h1>
+          </div>
+          <Link href="/create" className="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-gradient-to-r from-purple-600 to-blue-600 font-pj rounded-xl hover:scale-105 active:scale-95">
+            + New Escrow
+          </Link>
         </header>
-
-        {Number(projectCount) > 0 && project ? (
-          <div className="glass-card p-8 rounded-2xl border border-white/10">
-            <h2 className="text-xl font-bold mb-4 flex justify-between">
-              Project #0
-              <span className="text-sm bg-blue-900/50 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">
-                {(project as any)[4] === 1 ? 'FUNDED' : (project as any)[4] === 3 ? 'COMPLETED' : 'UNKNOWN'}
-              </span>
-            </h2>
-            <div className="grid grid-cols-2 gap-4 text-sm font-mono text-gray-400 mb-6">
-              <p>Client: <span className="text-white">{(project as any)[0]}</span></p>
-              <p>Worker: <span className="text-white">{(project as any)[1]}</span></p>
-              <p>Current Milestone: <span className="text-white">{(project as any)[5]} / 2</span></p>
+        
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
+            <p className="text-gray-400 text-sm font-medium mb-2">My Wallet Balance (mUSDC)</p>
+            <p className="text-4xl font-light font-mono text-green-400">
+              {usdcBalance ? Number(usdcBalance.formatted).toFixed(2) : '0.00'}
+            </p>
+          </div>
+          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
+            <p className="text-gray-400 text-sm font-medium mb-2">Network</p>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <p className="text-2xl font-semibold text-white">Sepolia Testnet</p>
             </div>
-            
-            {isClient && (project as any)[4] === 1 && (
-              <button 
-                onClick={handleApproveMilestone} 
-                disabled={loadingApprove}
-                className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors w-full md:w-auto"
-              >
-                {loadingApprove ? "Memproses..." : "Approve Next Milestone (Pay Worker)"}
-              </button>
-            )}
+          </div>
+          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
+            <p className="text-gray-400 text-sm font-medium mb-2">Contract Address</p>
+            <p className="text-sm font-mono text-gray-300 break-all">{TRUSTWORK_ADDRESS || 'Not Deployed'}</p>
+          </div>
+        </div>
 
-            {isWorker && (project as any)[4] === 1 && (
-              <div className="p-4 bg-purple-900/30 border border-purple-500/30 rounded-lg text-purple-200">
-                Anda adalah Pekerja di proyek ini. Kerjakan tugas Anda dan tunggu Klien menekan Approve agar dana cair ke dompet Anda!
+        {/* Projects Area */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-white mb-6">Your Active Projects</h2>
+          
+          {Number(projectCount) > 0 && project ? (
+            <div className="glass-card p-8 rounded-2xl border border-white/10 shadow-lg bg-gray-900/50">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Project #0</h2>
+                <span className={`px-4 py-1.5 rounded-full text-sm font-bold border ${
+                  (project as any)[4] === 1 ? 'bg-blue-900/50 text-blue-300 border-blue-500/30' : 
+                  (project as any)[4] === 3 ? 'bg-green-900/50 text-green-300 border-green-500/30' : 
+                  'bg-gray-800 text-gray-400'
+                }`}>
+                  {(project as any)[4] === 1 ? 'FUNDED / ACTIVE' : (project as any)[4] === 3 ? 'COMPLETED' : 'UNKNOWN'}
+                </span>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center p-12 glass-card rounded-2xl border border-white/10">
-            <h3 className="text-lg">No active escrows</h3>
-          </div>
-        )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm font-mono text-gray-400 mb-8 p-6 bg-black/50 rounded-xl border border-white/5">
+                <div>
+                  <p className="mb-1 text-gray-500">Client (Pemberi Kerja):</p>
+                  <p className="text-white truncate">{(project as any)[0]}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-gray-500">Worker (Freelancer):</p>
+                  <p className="text-purple-400 truncate">{(project as any)[1]}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-gray-500">Milestone Progress:</p>
+                  <p className="text-white text-lg font-bold">{(project as any)[5]} <span className="text-sm font-normal text-gray-500">/ 2 Milestones Approved</span></p>
+                </div>
+                <div>
+                  <p className="mb-1 text-gray-500">Total Locked Value:</p>
+                  <p className="text-white text-lg font-bold">100 <span className="text-sm font-normal text-gray-500">mUSDC</span></p>
+                </div>
+              </div>
+              
+              {isClient && (project as any)[4] === 1 && (
+                <div className="flex flex-col items-end">
+                  <p className="text-sm text-gray-400 mb-2">Hanya Anda (Klien) yang bisa menyetujui pembayaran ini.</p>
+                  <button 
+                    onClick={handleApproveMilestone} 
+                    disabled={loadingApprove}
+                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                  >
+                    {loadingApprove ? "Memproses Pencairan..." : "Approve Next Milestone (Pay Worker)"}
+                  </button>
+                </div>
+              )}
+
+              {isWorker && (project as any)[4] === 1 && (
+                <div className="p-5 bg-purple-900/20 border border-purple-500/30 rounded-xl text-purple-200 flex items-start gap-4">
+                  <span className="text-2xl">⏳</span>
+                  <div>
+                    <p className="font-bold mb-1">Menunggu Persetujuan Klien</p>
+                    <p className="text-sm opacity-80">Anda adalah Pekerja di proyek ini. Kerjakan tugas Anda dan tunggu Klien menekan tombol Approve. Jika disetujui, mUSDC akan otomatis masuk ke dompet Anda di atas.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="glass-card rounded-2xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
+              <h3 className="text-lg font-medium text-white mb-2">No active escrows</h3>
+              <p className="text-gray-400 max-w-md mx-auto">Deploy a new contract to get started safely.</p>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
