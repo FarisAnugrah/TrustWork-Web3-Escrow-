@@ -9,12 +9,12 @@ export default function Home() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-black relative overflow-x-hidden selection:bg-purple-900 selection:text-white font-sans">
+    <main className="flex flex-col items-center bg-black relative overflow-hidden selection:bg-purple-900 selection:text-white font-sans w-full">
       
       {/* Background Gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-900 rounded-full blur-[150px] opacity-20 pointer-events-none animate-pulse"></div>
       <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-900 rounded-full blur-[150px] opacity-20 pointer-events-none animate-pulse"></div>
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay"></div>
+      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none mix-blend-overlay"></div>
 
       {/* Navbar */}
       <nav className="w-full max-w-7xl flex items-center justify-between py-6 px-6 lg:px-8 border-b border-white/10 relative z-50">
@@ -45,10 +45,10 @@ export default function Home() {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <Link href="/dashboard" className="px-10 py-5 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 text-lg shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+          <Link href="/dashboard" className="px-10 py-5 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95 text-lg shadow-[0_0_30px_rgba(255,255,255,0.3)] flex justify-center">
             Launch Application
           </Link>
-          <Link href="/create" className="px-10 py-5 bg-black border border-white/20 text-white font-bold rounded-xl hover:bg-white/5 transition-all hover:scale-105 active:scale-95 text-lg">
+          <Link href="/create" className="px-10 py-5 bg-black border border-white/20 text-white font-bold rounded-xl hover:bg-white/5 transition-all hover:scale-105 active:scale-95 text-lg flex justify-center">
             Deploy an Escrow
           </Link>
         </div>
@@ -148,7 +148,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full py-8 border-t border-white/10 bg-black relative z-10">
+      <footer className="w-full py-8 border-t border-white/10 bg-black relative z-10 mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
             <span className="font-bold text-white bg-white/10 px-3 py-1.5 rounded-lg border border-white/5">T</span>
