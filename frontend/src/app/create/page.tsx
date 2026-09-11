@@ -11,7 +11,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import toast from 'react-hot-toast';
 
 interface MilestoneInput {
-  percentage: number;
+  percentage: string; // Ubah ke string agar '0' bisa diketik leluasa
   description: string;
 }
 
@@ -22,8 +22,8 @@ export default function CreateProject() {
   const [amount, setAmount] = useState('');
   
   const [milestones, setMilestones] = useState<MilestoneInput[]>([
-    { percentage: 30, description: 'Desain UI/UX Selesai' },
-    { percentage: 70, description: 'Testing & Deployment Selesai' }
+    { percentage: '30', description: 'Desain UI/UX Selesai' },
+    { percentage: '70', description: 'Testing & Deployment Selesai' }
   ]);
   
   const [status, setStatus] = useState('');
@@ -31,12 +31,13 @@ export default function CreateProject() {
 
   useEffect(() => setMounted(true), []);
 
-  const totalPercentage = milestones.reduce((a, b) => a + (b.percentage || 0), 0);
+  // Konversi aman saat kalkulasi total
+  const totalPercentage = milestones.reduce((a, b) => a + (parseInt(b.percentage) || 0), 0);
   const isValidPercentage = totalPercentage === 100;
 
   const handleAddMilestone = () => {
     if (milestones.length < 5) {
-      setMilestones([...milestones, { percentage: 0, description: '' }]);
+      setMilestones([...milestones, { percentage: '', description: '' }]);
     }
   };
 
@@ -49,7 +50,8 @@ export default function CreateProject() {
   const handleMilestoneChange = (index: number, field: 'percentage' | 'description', value: string) => {
     const newMilestones = [...milestones];
     if (field === 'percentage') {
-      newMilestones[index].percentage = parseInt(value) || 0;
+      // Biarkan string masuk apa adanya agar user bisa ketik "50" tanpa terpotong
+      newMilestones[index].percentage = value;
     } else {
       newMilestones[index].description = value;
     }
@@ -66,7 +68,8 @@ export default function CreateProject() {
     try {
       setIsDeploying(true);
       const amountWei = parseUnits(amount, 18);
-      const percentagesArr = milestones.map(m => m.percentage);
+      // Baru ubah ke Number saat dikirim ke Smart Contract
+      const percentagesArr = milestones.map(m => parseInt(m.percentage) || 0);
 
       const tempProjectData = { worker, totalAmount: amount, milestones: milestones };
       localStorage.setItem('trustwork_draft_0', JSON.stringify(tempProjectData));
