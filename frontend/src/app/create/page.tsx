@@ -26,7 +26,7 @@ export default function CreateProject() {
       const amountWei = parseUnits(amount, 18);
 
       // 1. Approve USDC Token
-      setStatus('Minta Izin Akses Token (Approve)...');
+      setStatus('Minta Izin (Approve)...');
       const { request: approveReq } = await prepareWriteContract({
         address: USDC_ADDRESS,
         abi: MockUSDCABI,
@@ -37,7 +37,7 @@ export default function CreateProject() {
       await waitForTransaction({ hash: approveHash });
 
       // 2. Create Escrow Project
-      setStatus('Mengunci Dana ke Smart Contract...');
+      setStatus('Mengunci Dana...');
       const { request: createReq } = await prepareWriteContract({
         address: TRUSTWORK_ADDRESS,
         abi: TrustWorkABI,
@@ -47,8 +47,9 @@ export default function CreateProject() {
       const { hash: createHash } = await writeContract(createReq);
       await waitForTransaction({ hash: createHash });
 
-      setStatus('Sukses! Escrow Berhasil Dibuat.');
+      setStatus('Sukses Dibuat.');
       alert('Proyek berhasil dibuat! Cek Dashboard.');
+      window.location.href = '/dashboard';
     } catch (e: any) {
       console.error(e);
       alert('Gagal: ' + e.message);
@@ -58,48 +59,59 @@ export default function CreateProject() {
     }
   };
 
-  if (!mounted) return null;
+  // Jangan render apapun sebelum client-side mounting selesai
+  if (!mounted) {
+    return <div className="min-h-screen bg-black" />;
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto">
-      {/* Header with Wallet */}
-      <div className="max-w-4xl mx-auto flex justify-end mb-4">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12">
+      <div className="max-w-4xl mx-auto flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+        <Link href="/dashboard" className="text-gray-400 hover:text-white">← Back to Dashboard</Link>
         <ConnectButton />
       </div>
 
-      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-50 pointer-events-auto">
+      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div>
-          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white mb-8 inline-block">← Back</Link>
           <h1 className="text-4xl font-extrabold mb-4">Secure a Gig</h1>
           <p className="text-gray-400 mb-8">Lock funds in smart contract. Released only when milestones are approved.</p>
         </div>
         
-        <div className="glass-card rounded-3xl p-8 border border-white/10 shadow-2xl bg-black/80">
+        <div className="bg-gray-900 rounded-3xl p-8 border border-gray-800 shadow-2xl">
           <div className="space-y-6">
             <div>
               <label className="block text-sm text-gray-300 mb-2">Worker Address</label>
               <input 
-                className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white font-mono pointer-events-auto" 
+                className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono" 
                 placeholder="0x..." 
+                value={worker}
                 onChange={e => setWorker(e.target.value)} 
               />
             </div>
             <div>
               <label className="block text-sm text-gray-300 mb-2">Total Amount (mUSDC)</label>
               <input 
-                className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white font-mono pointer-events-auto" 
+                className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono" 
                 placeholder="100" 
                 type="number" 
+                value={amount}
                 onChange={e => setAmount(e.target.value)} 
               />
             </div>
-            <button 
-              onClick={handleCreate} 
-              disabled={!address || isDeploying} 
-              className="w-full bg-white text-black px-4 py-4 rounded-xl font-bold transition-all disabled:opacity-50 pointer-events-auto cursor-pointer"
-            >
-              {isDeploying ? status : (address ? 'Lock Funds' : 'Connect Wallet First')}
-            </button>
+            
+            {!address ? (
+              <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-xl text-red-400 text-center text-sm">
+                Harap hubungkan dompet (Connect Wallet) di sudut kanan atas terlebih dahulu.
+              </div>
+            ) : (
+              <button 
+                onClick={handleCreate} 
+                disabled={isDeploying || !worker || !amount} 
+                className={`w-full px-4 py-4 rounded-xl font-bold transition-all ${isDeploying || !worker || !amount ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200 cursor-pointer'}`}
+              >
+                {isDeploying ? status : 'Lock Funds & Create'}
+              </button>
+            )}
           </div>
         </div>
       </div>
