@@ -45,7 +45,6 @@ export default function Dashboard() {
       });
 
       const fetchedProjects = [];
-      // Mengubah urutan array menjadi Ascending (0, 1, 2, 3...)
       for (let i = 0; i < projectCount; i++) {
         try {
           const data = await client.readContract({
@@ -61,7 +60,6 @@ export default function Dashboard() {
       }
       setProjectsData(fetchedProjects);
       
-      // Buka accordion secara otomatis untuk proyek terbaru (ID tertinggi)
       if (fetchedProjects.length > 0) {
         setActiveProjectId(projectCount - 1);
       }
@@ -192,11 +190,9 @@ export default function Dashboard() {
                 const isCompleted = pData[4] === 3;
                 const currentMilestoneIndex = Number(pData[5]);
                 
-                // Ambil Nama Proyek & Deskripsi Milestone dari LocalStorage berdasarkan ID
                 const saved = typeof window !== 'undefined' ? localStorage.getItem(`trustwork_draft_${pId}`) : null;
                 const draft = saved ? JSON.parse(saved) : null;
                 
-                // Terapkan data off-chain / fallback on-chain
                 const projectName = draft?.name || `Escrow Contract #${pId}`;
                 const totalMilestones = draft?.milestones?.length || 2;
                 const currentTaskDesc = draft?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
@@ -279,6 +275,35 @@ export default function Dashboard() {
                                 </div>
                               </div>
                             )}
+
+                            {/* TRANSACTION HISTORY SECTION */}
+                            <div className="mt-6 pt-6 border-t border-white/10">
+                               <h3 className="text-gray-400 text-sm font-bold mb-3 uppercase tracking-wider flex items-center gap-2">
+                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                 On-Chain Transparency
+                               </h3>
+                               <div className="flex gap-4">
+                                 <a 
+                                   href={`https://sepolia.etherscan.io/address/${TRUSTWORK_ADDRESS}#internaltx`} 
+                                   target="_blank" 
+                                   rel="noreferrer" 
+                                   className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 px-4 rounded-lg transition-colors border border-gray-600"
+                                 >
+                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                   View Contract Logs
+                                 </a>
+                                 <a 
+                                   href={`https://sepolia.etherscan.io/token/${USDC_ADDRESS}?a=${TRUSTWORK_ADDRESS}`} 
+                                   target="_blank" 
+                                   rel="noreferrer" 
+                                   className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 px-4 rounded-lg transition-colors border border-gray-600"
+                                 >
+                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                   Track Vault Funds
+                                 </a>
+                               </div>
+                            </div>
+
                           </div>
 
                           <div>
