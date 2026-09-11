@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [loadingApprove, setLoadingApprove] = useState(false);
   const [draftMilestones, setDraftMilestones] = useState<any>(null);
   
+  // Ambil total project yang ada di smart contract
   const { data: projectCount } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
@@ -18,6 +19,10 @@ export default function Dashboard() {
     watch: true,
   });
 
+  // Untuk Hackathon MVP, kita asumsikan kita fetch array index ke 0.
+  // Tapi UI-nya akan kita buat seolah-olah ini adalah List (Daftar) Proyek
+  // lalu bisa klik 'View Detail' untuk memperluas tampilannya.
+  
   const { data: project } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
@@ -32,6 +37,9 @@ export default function Dashboard() {
     token: USDC_ADDRESS,
     watch: true,
   });
+
+  // State untuk UI Toggle Detail (Accordion)
+  const [activeProjectId, setActiveProjectId] = useState<number | null>(0);
 
   useEffect(() => {
     const saved = localStorage.getItem('trustwork_draft_0');
@@ -70,7 +78,7 @@ export default function Dashboard() {
   const isCompleted = project && (project as any)[4] === 3;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto selection:bg-purple-900">
       <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">
@@ -86,14 +94,14 @@ export default function Dashboard() {
               )}
             </h1>
           </div>
-          <Link href="/create" className="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-gradient-to-r from-purple-600 to-blue-600 font-pj rounded-xl hover:scale-105 active:scale-95">
+          <Link href="/create" className="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-gradient-to-r from-purple-600 to-blue-600 font-pj rounded-xl hover:scale-105 active:scale-95 shadow-lg shadow-purple-500/20">
             + New Escrow
           </Link>
         </header>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
-            <p className="text-gray-400 text-sm font-medium mb-2">My Wallet Balance (mUSDC)</p>
+          <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden group">
+            <p className="text-gray-400 text-sm font-medium mb-2 group-hover:text-gray-300 transition-colors">My Wallet Balance (mUSDC)</p>
             <p className="text-4xl font-light font-mono text-green-400">
               {usdcBalance ? Number(usdcBalance.formatted).toFixed(2) : '0.00'}
             </p>
@@ -112,87 +120,134 @@ export default function Dashboard() {
         </div>
 
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-white mb-6">Your Active Projects</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-white">Your Active Projects</h2>
+            <span className="text-sm text-gray-500">Showing {Number(projectCount) > 0 ? '1' : '0'} of {projectCount !== undefined ? Number(projectCount) : '0'}</span>
+          </div>
           
           {Number(projectCount) > 0 && project ? (
-            <div className={`glass-card p-8 rounded-2xl border shadow-lg ${isCompleted ? 'bg-green-900/10 border-green-500/30' : 'bg-gray-900/50 border-white/10'}`}>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Project #0</h2>
-                <span className={`px-4 py-1.5 rounded-full text-sm font-bold border ${
-                  (project as any)[4] === 1 ? 'bg-blue-900/50 text-blue-300 border-blue-500/30' : 
-                  isCompleted ? 'bg-green-900/50 text-green-300 border-green-500/50' : 
-                  'bg-gray-800 text-gray-400'
-                }`}>
-                  {(project as any)[4] === 1 ? 'FUNDED / ACTIVE' : isCompleted ? '✨ COMPLETED' : 'UNKNOWN'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm font-mono text-gray-400 mb-8 p-6 bg-black/50 rounded-xl border border-white/5">
-                <div>
-                  <p className="mb-1 text-gray-500">Client (Pemberi Kerja):</p>
-                  <p className="text-white truncate">{(project as any)[0]}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-gray-500">Worker (Freelancer):</p>
-                  <p className="text-purple-400 truncate">{(project as any)[1]}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-gray-500">Total Locked Value:</p>
-                  <p className="text-white text-lg font-bold">{(project as any)[2] ? Number((project as any)[2]) / 1e18 : 0} <span className="text-sm font-normal text-gray-500">mUSDC</span></p>
-                </div>
-                <div>
-                  <p className="mb-1 text-gray-500">Milestone Progress:</p>
-                  <p className={`${isCompleted ? 'text-green-400' : 'text-white'} text-lg font-bold`}>
-                    {isCompleted ? totalMilestones : currentMilestoneIndex} <span className="text-sm font-normal text-gray-500">/ {totalMilestones} Approved</span>
-                  </p>
-                </div>
-              </div>
-              
-              {/* Tampilan Jika Proyek Masih Berjalan (FUNDED) */}
-              {(project as any)[4] === 1 && (
-                <>
-                  <div className="mb-8 p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl">
-                    <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
-                    <div className="flex justify-between items-center">
-                      <p className="text-white text-xl">"{currentTaskDesc}"</p>
-                      <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg">Pay {currentTaskPct}%</span>
+            <div className="space-y-4">
+              {/* Project Card (List Item) */}
+              <div className={`glass-card rounded-2xl border transition-all duration-300 overflow-hidden ${
+                activeProjectId === 0 
+                ? (isCompleted ? 'bg-green-900/10 border-green-500/30 shadow-lg shadow-green-900/20' : 'bg-gray-900/80 border-purple-500/30 shadow-lg shadow-purple-900/20')
+                : 'bg-black/40 border-white/5 hover:border-white/20'
+              }`}>
+                
+                {/* Always Visible Header (Click to toggle) */}
+                <div 
+                  className="p-6 cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                  onClick={() => setActiveProjectId(activeProjectId === 0 ? null : 0)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${isCompleted ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                      #0
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Website Redesign MVP</h3>
+                      <p className="text-sm text-gray-500 font-mono mt-1">Client: {(project as any)[0].slice(0,6)}...{(project as any)[0].slice(-4)}</p>
                     </div>
                   </div>
-
-                  {isClient && (
-                    <div className="flex flex-col items-end">
-                      <button 
-                        onClick={handleApproveMilestone} 
-                        disabled={loadingApprove}
-                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                      >
-                        {loadingApprove ? "Memproses Pencairan..." : "Approve Milestone (Pay Worker)"}
-                      </button>
+                  
+                  <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm text-gray-500 mb-1">Locked Value</p>
+                      <p className="font-mono font-bold text-white">{(project as any)[2] ? Number((project as any)[2]) / 1e18 : 0} USDC</p>
                     </div>
-                  )}
+                    
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold border ${
+                      (project as any)[4] === 1 ? 'bg-blue-900/50 text-blue-300 border-blue-500/30' : 
+                      isCompleted ? 'bg-green-900/50 text-green-300 border-green-500/50' : 
+                      'bg-gray-800 text-gray-400'
+                    }`}>
+                      {(project as any)[4] === 1 ? 'ACTIVE' : isCompleted ? 'COMPLETED' : 'UNKNOWN'}
+                    </span>
 
-                  {isWorker && (
-                    <div className="p-5 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex items-start gap-4">
-                      <span className="text-2xl">⏳</span>
-                      <div>
-                        <p className="font-bold mb-1">Menunggu Persetujuan Klien</p>
-                        <p className="text-sm opacity-80">Selesaikan tugas <b>"{currentTaskDesc}"</b> dan tunggu Klien menekan tombol Approve. Jika disetujui, mUSDC akan otomatis masuk ke dompet Anda.</p>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Tampilan Jika Proyek Selesai (COMPLETED) */}
-              {isCompleted && (
-                <div className="p-8 bg-green-900/20 border border-green-500/50 rounded-2xl text-center">
-                  <div className="text-5xl mb-4">🎉</div>
-                  <h3 className="text-2xl font-bold text-green-400 mb-2">Proyek Selesai!</h3>
-                  <p className="text-green-200/80 max-w-lg mx-auto">
-                    Seluruh {totalMilestones} milestone telah disetujui. 100% dana telah berhasil dicairkan ke dompet Pekerja melalui TrustWork Smart Contract.
-                  </p>
+                    <svg className={`w-5 h-5 text-gray-400 transition-transform ${activeProjectId === 0 ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
-              )}
+
+                {/* Expanded Details Area */}
+                {activeProjectId === 0 && (
+                  <div className="border-t border-white/5 p-6 bg-black/20">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      
+                      {/* Left Col: Info */}
+                      <div className="lg:col-span-2 space-y-6">
+                        <div className="grid grid-cols-2 gap-4 text-sm font-mono text-gray-400 p-4 bg-black/40 rounded-xl border border-white/5">
+                          <div>
+                            <p className="mb-1 text-gray-500">Client Address:</p>
+                            <p className="text-white truncate">{(project as any)[0]}</p>
+                          </div>
+                          <div>
+                            <p className="mb-1 text-gray-500">Worker Address:</p>
+                            <p className="text-purple-400 truncate">{(project as any)[1]}</p>
+                          </div>
+                        </div>
+
+                        {(project as any)[4] === 1 && (
+                          <div className="p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl relative overflow-hidden">
+                            <div className="absolute left-0 top-0 w-1 h-full bg-purple-500"></div>
+                            <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <p className="text-white text-lg">"{currentTaskDesc}"</p>
+                              <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg text-sm whitespace-nowrap">Pay {currentTaskPct}%</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {isCompleted && (
+                          <div className="p-6 bg-green-900/20 border border-green-500/50 rounded-xl flex items-center gap-4">
+                            <div className="text-4xl">🎉</div>
+                            <div>
+                              <h3 className="text-lg font-bold text-green-400">Proyek Selesai</h3>
+                              <p className="text-green-200/80 text-sm mt-1">100% dana telah berhasil dicairkan ke dompet Pekerja.</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right Col: Action & Timeline */}
+                      <div>
+                        <div className="mb-6">
+                          <p className="text-gray-500 text-sm mb-2">Milestone Progress</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
+                              <div className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-purple-500'} transition-all`} style={{ width: `${(currentMilestoneIndex / totalMilestones) * 100}%` }}></div>
+                            </div>
+                            <span className="text-sm font-mono text-white whitespace-nowrap">
+                              {isCompleted ? totalMilestones : currentMilestoneIndex} / {totalMilestones}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        {isClient && (project as any)[4] === 1 && (
+                          <button 
+                            onClick={handleApproveMilestone} 
+                            disabled={loadingApprove}
+                            className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex justify-center items-center gap-2"
+                          >
+                            {loadingApprove ? (
+                              <><span className="animate-spin text-xl">↻</span> Memproses...</>
+                            ) : "✓ Approve & Pay Worker"}
+                          </button>
+                        )}
+
+                        {isWorker && (project as any)[4] === 1 && (
+                          <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex flex-col gap-2">
+                            <p className="font-bold text-sm flex items-center gap-2"><span className="animate-pulse">⏳</span> Menunggu Klien</p>
+                            <p className="text-xs opacity-80 leading-relaxed">Dana akan otomatis masuk ke dompet Anda saat klien menekan Approve.</p>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="glass-card rounded-2xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
