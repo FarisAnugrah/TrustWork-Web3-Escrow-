@@ -2,6 +2,7 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { TRUSTWORK_ADDRESS } from '@/lib/config';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -83,7 +84,6 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          {/* Connecting Line (Desktop) */}
           <div className="hidden md:block absolute top-12 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-purple-500/0 via-purple-500/50 to-blue-500/0 -z-10"></div>
 
           <div className="glass-card p-10 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-purple-500/30 transition-colors bg-black/60 backdrop-blur-xl">
