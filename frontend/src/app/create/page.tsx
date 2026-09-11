@@ -8,6 +8,7 @@ import { TRUSTWORK_ADDRESS, USDC_ADDRESS } from '@/lib/config';
 import { parseUnits } from 'viem';
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import toast from 'react-hot-toast';
 
 interface MilestoneInput {
   percentage: number;
@@ -20,7 +21,6 @@ export default function CreateProject() {
   const [worker, setWorker] = useState('');
   const [amount, setAmount] = useState('');
   
-  // State baru dengan deskripsi
   const [milestones, setMilestones] = useState<MilestoneInput[]>([
     { percentage: 30, description: 'Desain UI/UX Selesai' },
     { percentage: 70, description: 'Testing & Deployment Selesai' }
@@ -57,30 +57,22 @@ export default function CreateProject() {
   };
 
   const handleCreate = async () => {
-    if (!worker || !amount) return alert('Isi data worker dan amount dengan lengkap');
-    if (!isValidPercentage) return alert('Total persentase milestone harus tepat 100%');
+    if (!worker || !amount) return toast.error('Isi data worker dan amount dengan lengkap');
+    if (!isValidPercentage) return toast.error('Total persentase milestone harus tepat 100%');
     
-    // Validasi input deskripsi
     const hasEmptyDesc = milestones.some(m => !m.description.trim());
-    if (hasEmptyDesc) return alert('Harap isi semua deskripsi tugas (Task Description)');
+    if (hasEmptyDesc) return toast.error('Harap isi semua deskripsi tugas');
     
     try {
       setIsDeploying(true);
       const amountWei = parseUnits(amount, 18);
-      
-      // Ambil hanya array angka persentase untuk dikirim ke Smart Contract
       const percentagesArr = milestones.map(m => m.percentage);
 
-      // (Opsional) Simpan deskripsi ini ke localStorage untuk ditampilkan di Dashboard MVP
-      // Karena menyimpan string panjang di Smart Contract itu mahal (gas fee tinggi).
-      const tempProjectData = {
-        worker,
-        totalAmount: amount,
-        milestones: milestones
-      };
+      const tempProjectData = { worker, totalAmount: amount, milestones: milestones };
       localStorage.setItem('trustwork_draft_0', JSON.stringify(tempProjectData));
 
       setStatus('Minta Izin (Approve)...');
+      const approveLoading = toast.loading('Meminta izin akses USDC...');
       const { request: approveReq } = await prepareWriteContract({
         address: USDC_ADDRESS,
         abi: MockUSDCABI,
@@ -89,8 +81,11 @@ export default function CreateProject() {
       });
       const { hash: approveHash } = await writeContract(approveReq);
       await waitForTransaction({ hash: approveHash });
+      toast.dismiss(approveLoading);
+      toast.success('Izin USDC diberikan!');
 
       setStatus('Mengunci Dana...');
+      const createLoading = toast.loading('Mengunci dana ke Smart Contract...');
       const { request: createReq } = await prepareWriteContract({
         address: TRUSTWORK_ADDRESS,
         abi: TrustWorkABI,
@@ -99,13 +94,27 @@ export default function CreateProject() {
       });
       const { hash: createHash } = await writeContract(createReq);
       await waitForTransaction({ hash: createHash });
+      toast.dismiss(createLoading);
+
+      toast.success(
+        <div>
+          Proyek berhasil dibuat!<br/>
+          <a href={`https://sepolia.etherscan.io/tx/${createHash}`} target="_blank" rel="noreferrer" className="text-purple-400 underline text-xs mt-1 block">
+            Lihat di Explorer ↗
+          </a>
+        </div>,
+        { duration: 5000 }
+      );
 
       setStatus('Sukses Dibuat.');
-      alert('Proyek berhasil dibuat! Cek Dashboard.');
-      window.location.href = '/dashboard';
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
+
     } catch (e: any) {
       console.error(e);
-      alert('Gagal: ' + e.message);
+      toast.dismiss();
+      toast.error('Gagal: ' + (e.shortMessage || e.message));
       setStatus('');
     } finally {
       setIsDeploying(false);

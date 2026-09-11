@@ -5,13 +5,13 @@ import { TrustWorkABI } from '@/lib/TrustWorkABI';
 import { TRUSTWORK_ADDRESS, USDC_ADDRESS } from '@/lib/config';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const { address } = useAccount();
   const [loadingApprove, setLoadingApprove] = useState(false);
   const [draftMilestones, setDraftMilestones] = useState<any>(null);
   
-  // Ambil total project yang ada di smart contract
   const { data: projectCount } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
@@ -19,10 +19,6 @@ export default function Dashboard() {
     watch: true,
   });
 
-  // Untuk Hackathon MVP, kita asumsikan kita fetch array index ke 0.
-  // Tapi UI-nya akan kita buat seolah-olah ini adalah List (Daftar) Proyek
-  // lalu bisa klik 'View Detail' untuk memperluas tampilannya.
-  
   const { data: project } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
@@ -38,7 +34,6 @@ export default function Dashboard() {
     watch: true,
   });
 
-  // State untuk UI Toggle Detail (Accordion)
   const [activeProjectId, setActiveProjectId] = useState<number | null>(0);
 
   useEffect(() => {
@@ -51,6 +46,8 @@ export default function Dashboard() {
   const handleApproveMilestone = async () => {
     try {
       setLoadingApprove(true);
+      const approveLoading = toast.loading('Memproses pencairan dana...');
+      
       const { request } = await prepareWriteContract({
         address: TRUSTWORK_ADDRESS,
         abi: TrustWorkABI,
@@ -59,9 +56,20 @@ export default function Dashboard() {
       });
       const { hash } = await writeContract(request);
       await waitForTransaction({ hash });
-      alert("Milestone berhasil dicairkan ke Pekerja!");
+      
+      toast.dismiss(approveLoading);
+      toast.success(
+        <div>
+          Dana berhasil dicairkan!<br/>
+          <a href={`https://sepolia.etherscan.io/tx/${hash}`} target="_blank" rel="noreferrer" className="text-purple-400 underline text-xs mt-1 block">
+            Lihat di Explorer ↗
+          </a>
+        </div>,
+        { duration: 6000 }
+      );
     } catch (e: any) {
-      alert("Gagal: " + e.message);
+      toast.dismiss();
+      toast.error('Gagal: ' + (e.shortMessage || e.message));
     } finally {
       setLoadingApprove(false);
     }
@@ -115,7 +123,7 @@ export default function Dashboard() {
           </div>
           <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
             <p className="text-gray-400 text-sm font-medium mb-2">Contract Address</p>
-            <p className="text-sm font-mono text-gray-300 break-all">{TRUSTWORK_ADDRESS || 'Not Deployed'}</p>
+            <a href={`https://sepolia.etherscan.io/address/${TRUSTWORK_ADDRESS}`} target="_blank" rel="noreferrer" className="text-sm font-mono text-purple-400 hover:text-purple-300 underline break-all">{TRUSTWORK_ADDRESS || 'Not Deployed'}</a>
           </div>
         </div>
 
@@ -127,14 +135,12 @@ export default function Dashboard() {
           
           {Number(projectCount) > 0 && project ? (
             <div className="space-y-4">
-              {/* Project Card (List Item) */}
               <div className={`glass-card rounded-2xl border transition-all duration-300 overflow-hidden ${
                 activeProjectId === 0 
                 ? (isCompleted ? 'bg-green-900/10 border-green-500/30 shadow-lg shadow-green-900/20' : 'bg-gray-900/80 border-purple-500/30 shadow-lg shadow-purple-900/20')
                 : 'bg-black/40 border-white/5 hover:border-white/20'
               }`}>
                 
-                {/* Always Visible Header (Click to toggle) */}
                 <div 
                   className="p-6 cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                   onClick={() => setActiveProjectId(activeProjectId === 0 ? null : 0)}
@@ -169,12 +175,10 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Expanded Details Area */}
                 {activeProjectId === 0 && (
                   <div className="border-t border-white/5 p-6 bg-black/20">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       
-                      {/* Left Col: Info */}
                       <div className="lg:col-span-2 space-y-6">
                         <div className="grid grid-cols-2 gap-4 text-sm font-mono text-gray-400 p-4 bg-black/40 rounded-xl border border-white/5">
                           <div>
@@ -209,7 +213,6 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      {/* Right Col: Action & Timeline */}
                       <div>
                         <div className="mb-6">
                           <p className="text-gray-500 text-sm mb-2">Milestone Progress</p>
@@ -223,7 +226,6 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        {/* Actions */}
                         {isClient && (project as any)[4] === 1 && (
                           <button 
                             onClick={handleApproveMilestone} 
