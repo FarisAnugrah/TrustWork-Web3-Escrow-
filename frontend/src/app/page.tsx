@@ -178,16 +178,16 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full py-8 border-t border-white/10 bg-black relative z-10 mt-auto">
+      <footer className="w-full py-8 border-t border-white/10 bg-black relative z-10 mt-auto pointer-events-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
             <span className="font-bold text-white bg-white/10 px-3 py-1.5 rounded-lg border border-white/5">T</span>
             <span className="text-gray-500 text-sm">© 2026 TrustWork. Built for Blockdev.id Hackathon.</span>
           </div>
           <div className="flex gap-8 text-sm font-medium">
-            <a href="#" className="text-gray-500 hover:text-white transition-colors">Documentation</a>
-            <a href={`https://sepolia.etherscan.io/address/${TRUSTWORK_ADDRESS}`} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors">Smart Contract</a>
-            <a href="https://github.com/FarisAnugrah/TrustWork-Web3-Escrow-" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors">GitHub</a>
+            <a href="https://github.com/FarisAnugrah/TrustWork-Web3-Escrow-/blob/development/README.md" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors cursor-pointer">Documentation</a>
+            <a href={`https://sepolia.etherscan.io/address/${TRUSTWORK_ADDRESS}`} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors cursor-pointer">Smart Contract</a>
+            <a href="https://github.com/FarisAnugrah/TrustWork-Web3-Escrow-" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors cursor-pointer">GitHub</a>
           </div>
         </div>
       </footer>
