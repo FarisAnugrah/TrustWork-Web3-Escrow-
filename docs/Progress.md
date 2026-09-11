@@ -31,9 +31,9 @@ Berikut adalah daftar file yang telah dibuat dalam folder `docs/`:
    - Mendefinisikan *conditional rendering* berdasarkan role *wallet* (Klien vs Pekerja vs Arbiter).
 
 ## Next Steps (Phase 2 - Execution)
-- [ ] Setup *repository* (Monorepo: Hardhat/Foundry + Next.js).
+- [x] Setup *repository* (Hardhat).
 - [x] Menulis kode `TrustWork.sol`.
-- [ ] Menulis *test script* lokal untuk Smart Contract.
+- [x] Menulis *test script* lokal untuk Smart Contract.
 - [ ] *Deploy* Smart Contract ke Testnet (Polygon Amoy / Sepolia).
 - [ ] Setup Next.js + Tailwind + RainbowKit.
 - [ ] Integrasi ABI Smart Contract ke Frontend.
