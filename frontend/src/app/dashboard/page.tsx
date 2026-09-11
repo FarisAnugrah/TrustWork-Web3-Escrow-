@@ -51,8 +51,6 @@ export default function Dashboard() {
 
       const fetchedProjects = [];
       
-      // OPTIMIZATION: Reverse loop to get newest projects first.
-      // Limit to 10 newest projects to prevent RPC rate-limits and UI lag during MVP.
       const MAX_PROJECTS_TO_FETCH = 10;
       const startIndex = projectCount - 1;
       const endIndex = Math.max(0, projectCount - MAX_PROJECTS_TO_FETCH);
@@ -77,7 +75,7 @@ export default function Dashboard() {
       setProjectsData(fetchedProjects);
       
       if (fetchedProjects.length > 0) {
-        setActiveProjectId(fetchedProjects[0].id); // Auto-expand the newest project
+        setActiveProjectId(fetchedProjects[0].id);
       }
     };
 
@@ -271,7 +269,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-end mb-6">
             <div>
               <h2 className="text-xl font-bold text-white">Your Escrows</h2>
-              <span className="text-sm text-gray-500">Showing 10 most recent projects</span>
+              <span className="text-sm text-gray-500">Showing {projectsData.length} most recent projects</span>
             </div>
           </div>
           
@@ -288,7 +286,12 @@ export default function Dashboard() {
               const draft = saved ? JSON.parse(saved) : null;
               
               const projectName = draft?.name || `Escrow Contract #${pId}`;
-              const totalMilestones = draft?.milestones?.length || 2;
+              
+              // PERBAIKAN: Jika milestones tidak ditemukan di local storage, minimal kita set sesuai jumlah index milestone saat ini di blockchain
+              // ditambah 1 (karena jika belum complete, berarti masih ada sisa minimal 1 milestone).
+              const fallbackTotal = currentMilestoneIndex > 0 ? (isCompleted ? currentMilestoneIndex : currentMilestoneIndex + 1) : 2;
+              const totalMilestones = draft?.milestones?.length || fallbackTotal;
+              
               const currentTaskDesc = draft?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
               const currentTaskPct = draft?.milestones?.[currentMilestoneIndex]?.percentage || '?';
 
@@ -406,7 +409,7 @@ export default function Dashboard() {
                             <p className="text-gray-500 text-sm mb-2">Milestone Progress</p>
                             <div className="flex items-center gap-2 mb-2">
                               <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                                <div className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-purple-500'} transition-all`} style={{ width: `${(currentMilestoneIndex / totalMilestones) * 100}%` }}></div>
+                                <div className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-purple-500'} transition-all`} style={{ width: `${(isCompleted ? 1 : (currentMilestoneIndex / totalMilestones)) * 100}%` }}></div>
                               </div>
                               <span className="text-sm font-mono text-white whitespace-nowrap">
                                 {isCompleted ? totalMilestones : currentMilestoneIndex} / {totalMilestones}
