@@ -20,7 +20,7 @@ export default function Home() {
       <nav className="w-full max-w-7xl flex items-center justify-between py-6 px-6 lg:px-8 border-b border-white/10 relative z-50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20 border border-white/10">
-            <span className="font-bold text-white text-xl">T</span>
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white hidden sm:block">TrustWork</h1>
         </div>
@@ -87,7 +87,9 @@ export default function Home() {
           <div className="hidden md:block absolute top-12 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-purple-500/0 via-purple-500/50 to-blue-500/0 -z-10"></div>
 
           <div className="glass-card p-10 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-purple-500/30 transition-colors bg-black/60 backdrop-blur-xl">
-            <div className="w-16 h-16 bg-purple-900/50 rounded-2xl flex items-center justify-center text-3xl mb-8 border border-purple-500/30 group-hover:scale-110 transition-transform shadow-lg shadow-purple-900/20">🔒</div>
+            <div className="w-16 h-16 bg-purple-900/50 rounded-2xl flex items-center justify-center mb-8 border border-purple-500/30 group-hover:scale-110 transition-transform shadow-lg shadow-purple-900/20 text-purple-400">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            </div>
             <h3 className="text-2xl font-bold text-white mb-4">1. Lock Funds</h3>
             <p className="text-gray-400 leading-relaxed text-lg">
               Clients deposit stablecoins (USDC) into a decentralized vault. Workers have peace of mind knowing the money is secured upfront.
@@ -95,7 +97,9 @@ export default function Home() {
           </div>
 
           <div className="glass-card p-10 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-blue-500/30 transition-colors bg-black/60 backdrop-blur-xl">
-            <div className="w-16 h-16 bg-blue-900/50 rounded-2xl flex items-center justify-center text-3xl mb-8 border border-blue-500/30 group-hover:scale-110 transition-transform shadow-lg shadow-blue-900/20">⚙️</div>
+            <div className="w-16 h-16 bg-blue-900/50 rounded-2xl flex items-center justify-center mb-8 border border-blue-500/30 group-hover:scale-110 transition-transform shadow-lg shadow-blue-900/20 text-blue-400">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </div>
             <h3 className="text-2xl font-bold text-white mb-4">2. Work & Approve</h3>
             <p className="text-gray-400 leading-relaxed text-lg">
               Freelancers deliver the work based on agreed milestones. The client reviews the work and clicks a single button to approve.
@@ -103,7 +107,9 @@ export default function Home() {
           </div>
 
           <div className="glass-card p-10 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-green-500/30 transition-colors bg-black/60 backdrop-blur-xl">
-            <div className="w-16 h-16 bg-green-900/50 rounded-2xl flex items-center justify-center text-3xl mb-8 border border-green-500/30 group-hover:scale-110 transition-transform shadow-lg shadow-green-900/20">💸</div>
+            <div className="w-16 h-16 bg-green-900/50 rounded-2xl flex items-center justify-center mb-8 border border-green-500/30 group-hover:scale-110 transition-transform shadow-lg shadow-green-900/20 text-green-400">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
             <h3 className="text-2xl font-bold text-white mb-4">3. Instant Payout</h3>
             <p className="text-gray-400 leading-relaxed text-lg">
               The Smart Contract instantly routes the funds directly to the worker's wallet. No pending days, no withdrawal fees.
@@ -117,15 +123,39 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 border-b border-white/10 pb-6 text-center md:text-left">Why choose TrustWork?</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { icon: "🛡️", title: "Non-Custodial", desc: "We never hold your funds. The audited smart contract does." },
-            { icon: "⚖️", title: "Fair Dispute", desc: "Neutral arbiters resolve conflicts if things go south without holding funds." },
-            { icon: "⛽", title: "Gas Optimized", desc: "Hybrid off-chain storage keeps deployment costs extremely low." },
-            { icon: "🧩", title: "Custom Milestones", desc: "Break down complex projects into 5 specific automated payment stages." },
-            { icon: "🌍", title: "Global Access", desc: "Anyone with an internet connection and a Web3 wallet can participate." },
-            { icon: "🕵️", title: "No KYC Required", desc: "Start locking funds and working immediately without identity hurdles." }
+            { 
+              icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.95 11.95 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>, 
+              title: "Non-Custodial", 
+              desc: "We never hold your funds. The audited smart contract does." 
+            },
+            { 
+              icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>, 
+              title: "Fair Dispute", 
+              desc: "Neutral arbiters resolve conflicts if things go south without holding funds." 
+            },
+            { 
+              icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>, 
+              title: "Gas Optimized", 
+              desc: "Hybrid off-chain storage keeps deployment costs extremely low." 
+            },
+            { 
+              icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>, 
+              title: "Custom Milestones", 
+              desc: "Break down complex projects into 5 specific automated payment stages." 
+            },
+            { 
+              icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, 
+              title: "Global Access", 
+              desc: "Anyone with an internet connection and a Web3 wallet can participate." 
+            },
+            { 
+              icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>, 
+              title: "No KYC Required", 
+              desc: "Start locking funds and working immediately without identity hurdles." 
+            }
           ].map((f, i) => (
-            <div key={i} className="bg-white/[0.02] p-8 rounded-2xl border border-white/5 hover:bg-white/[0.05] transition-colors flex gap-5">
-              <span className="text-3xl shrink-0">{f.icon}</span>
+            <div key={i} className="bg-white/[0.02] p-8 rounded-2xl border border-white/5 hover:bg-white/[0.05] transition-colors flex gap-5 group">
+              <span className="text-gray-400 group-hover:text-purple-400 transition-colors shrink-0">{f.icon}</span>
               <div>
                 <h3 className="text-xl font-bold text-white mb-2">{f.title}</h3>
                 <p className="text-gray-400 leading-relaxed">{f.desc}</p>
