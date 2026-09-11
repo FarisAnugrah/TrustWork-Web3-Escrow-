@@ -1,53 +1,40 @@
-# TrustWork - Web3 Escrow for Gig Economy
+# TrustWork 
 
-TrustWork is a decentralized escrow platform built for freelancers, informal workers, and clients. It eliminates payment disputes by locking funds in a smart contract and releasing them automatically upon milestone completion.
+A decentralized milestone-based escrow platform designed to eliminate payment disputes in the gig economy.
 
-Built for the **Blockdev.id Hackathon 2026**.
+TrustWork utilizes smart contracts to lock client funds upfront and release them automatically upon the completion of predefined tasks, ensuring trustless execution without intermediary fees.
 
-## 🏗️ Architecture & Tech Stack
+## 🏗️ Technical Architecture
 - **Smart Contract:** Solidity `^0.8.20`, OpenZeppelin (ReentrancyGuard, IERC20)
 - **Deployment & Testing:** Hardhat
-- **Network:** Ethereum Sepolia Testnet (using public nodes)
-- **Frontend:** Next.js 14 (App Router), TailwindCSS, Glassmorphism UI
-- **Web3 Integration:** Wagmi v1, Viem v1, RainbowKit
+- **Network:** Ethereum Sepolia Testnet
+- **Frontend:** Next.js 14 (App Router), TailwindCSS, Wagmi v1, RainbowKit
 
-## ✨ Key Features (MVP)
-1. **Dynamic Milestones:** Clients can set custom milestones (e.g., 20%, 30%, 50%) up to 5 stages, as long as it totals 100%.
-2. **Hybrid Off-Chain Storage:** Heavy strings (task descriptions) are stored off-chain to minimize gas fees, while crucial financial data (percentages) is locked securely on-chain.
-3. **Automated Payouts:** No manual transfers. Once a client clicks "Approve", the exact predefined percentage of USDC is instantly routed to the freelancer's wallet.
-4. **Accordion Dashboard:** Clean UI to manage multiple active/completed escrow contracts seamlessly.
+## ✨ Key Features
+1. **Dynamic Milestones:** Clients can define custom multi-stage payouts (e.g., 30%, 30%, 40%). The smart contract strictly enforces `require(totalPct == 100)` on-chain before locking the stablecoins.
+2. **Gas-Optimized Hybrid Storage:** Financial logic and state management live in Solidity, while heavy string payloads (project names, task descriptions) are synced to off-chain storage to minimize deployment and interaction costs.
+3. **Automated Instant Payouts:** Zero manual intervention. Once a client approves a milestone, the contract automatically routes the exact USDC percentage to the worker's wallet.
+4. **Privacy Isolation:** The Dashboard filters blockchain state to render only the escrow contracts where the connected wallet acts as either the Client or the Worker.
 
-## 📖 Live Demo Script (Hackathon)
-
-### 1. Preparation
-- Create **Account 1 (Client)** and **Account 2 (Worker)** on your MetaMask.
-- Fund Account 1 with Sepolia ETH (via Faucet).
-- Deploy the contract using Account 1 (Deployer automatically becomes the Arbiter).
-- Mint MockUSDC to Account 1.
-
-### 2. The Flow
-1. **Client** connects wallet, goes to `/create`.
-2. **Client** inputs **Worker**'s address, total amount, and sets dynamic milestones (e.g., Task 1: 50%, Task 2: 50%), then clicks *Lock Funds*.
-   - *Tx 1: Approves USDC spending.*
-   - *Tx 2: Creates Escrow (Locks funds in contract).*
-3. **Worker** connects wallet in Incognito mode, views Dashboard, clicks the project list to expand the details, sees status is `ACTIVE`, and starts working.
-4. **Client** reviews work, expands the project in Dashboard, and clicks *Approve Next Milestone*.
-   - *Tx 3: Smart contract automatically releases the specified % of funds to the Worker's wallet.*
-5. **Worker** checks their dashboard and sees the `My Wallet Balance` instantly go up in real-time.
-
-## 🛡️ Security Measures
-- `nonReentrant` modifiers on all transfer functions to prevent recursive attacks (e.g., re-entrancy drain).
-- Strict Role-Based Access Control (`Only client` can approve milestones).
-- Total milestone calculation is strictly checked on-chain (`require(totalPct == 100)`).
-- Non-custodial Arbiter: The Arbiter cannot withdraw funds for themselves, only distribute them between Client and Worker during a dispute.
+## 🛡️ Security Implementation
+- **Re-entrancy Protection:** All external token transfers are protected using OpenZeppelin's `nonReentrant` modifier. The Checks-Effects-Interactions pattern is strictly enforced.
+- **Role-Based Access Control:** Functions are strictly isolated. For example, `approveMilestone` can only be executed by the designated `client` address.
+- **Non-custodial Arbiter:** In the event of a dispute, an assigned 3rd-party Arbiter can distribute the remaining funds between the Client and Worker but cannot withdraw funds to their own wallet.
 
 ## 🚀 Running Locally
 ```bash
-# 1. Install dependencies for frontend
+# 1. Install frontend dependencies
 cd frontend
 npm install
 
 # 2. Run the Next.js development server
 npm run dev
-# Open http://localhost:3000
+# Application will run on http://localhost:3000
 ```
+
+## 📝 Demo Flow
+1. Connect **Wallet A (Client)** and deploy a new escrow via `/create`.
+2. Input the address of **Wallet B (Worker)**, total USDC amount, and set custom milestone stages.
+3. Connect **Wallet B (Worker)** in a separate browser window. Navigate to the Dashboard to view the `ACTIVE` escrow contract.
+4. Switch back to **Wallet A**, expand the project details, and click *Approve Next Milestone*.
+5. The specified percentage of funds is instantly transferred to **Wallet B**.
