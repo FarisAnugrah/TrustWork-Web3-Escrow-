@@ -33,7 +33,6 @@ export default function Dashboard() {
   const [projectsData, setProjectsData] = useState<any[]>([]);
 
   useEffect(() => {
-    // Jika guest tidak connect wallet, jangan fetch project (bersihkan state)
     if (!address) {
       setProjectsData([]);
       return;
@@ -60,8 +59,6 @@ export default function Dashboard() {
             args: [BigInt(i)]
           });
           
-          // FILTER: Hanya masukkan ke array jika address = Klien atau Pekerja
-          // Jika address bukan keduanya, proyek ini TIDAK AKAN muncul di Dashboard mereka.
           if (data[0] === address || data[1] === address) {
             fetchedProjects.push({ id: i, data });
           }
@@ -78,7 +75,7 @@ export default function Dashboard() {
     };
 
     fetchAllProjects();
-  }, [projectCount, address]); // Re-run effect kalau address berubah
+  }, [projectCount, address]);
 
   useEffect(() => {
     if (isConnecting) {
@@ -144,7 +141,6 @@ export default function Dashboard() {
     );
   }
 
-  // JIKA GUEST (BELUM CONNECT)
   if (!address) {
     return (
       <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto selection:bg-purple-900 animate-in fade-in duration-700">
@@ -155,7 +151,7 @@ export default function Dashboard() {
           </header>
           <div className="glass-card rounded-2xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center mt-20">
             <div className="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-6">
-              <span className="text-4xl">🔐</span>
+              <svg className="w-10 h-10 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">Wallet Disconnected</h3>
             <p className="text-gray-400 max-w-md mx-auto mb-8">
@@ -170,7 +166,6 @@ export default function Dashboard() {
     );
   }
 
-  // JIKA SUDAH CONNECT TAPI TIDAK PUNYA PROYEK SAMA SEKALI
   if (projectsData.length === 0) {
     return (
       <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto selection:bg-purple-900 animate-in fade-in duration-700">
@@ -211,7 +206,8 @@ export default function Dashboard() {
           </div>
 
           <div className="glass-card rounded-2xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
-            <h3 className="text-lg font-medium text-white mb-2">No active escrows found for this wallet</h3>
+            <svg className="w-12 h-12 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            <h3 className="text-lg font-medium text-white mb-2">No active escrows found</h3>
             <p className="text-gray-400 max-w-md mx-auto mb-6">Deploy a new contract to get started safely.</p>
             <Link href="/create" className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10">
               Deploy First Escrow
@@ -357,7 +353,9 @@ export default function Dashboard() {
                           
                           {isCompleted && (
                             <div className="p-6 bg-green-900/20 border border-green-500/50 rounded-xl flex items-center gap-4">
-                              <div className="text-4xl">🎉</div>
+                              <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center shrink-0">
+                                <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                              </div>
                               <div>
                                 <h3 className="text-lg font-bold text-green-400">Proyek Selesai</h3>
                                 <p className="text-green-200/80 text-sm mt-1">100% dana telah berhasil dicairkan ke dompet Pekerja.</p>
@@ -414,15 +412,26 @@ export default function Dashboard() {
                               className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex justify-center items-center gap-2"
                             >
                               {loadingApprove === pId ? (
-                                <><span className="animate-spin text-xl">↻</span> Memproses...</>
-                              ) : "✓ Approve & Pay Worker"}
+                                <><svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...</>
+                              ) : (
+                                <><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> Approve & Pay Worker</>
+                              )}
                             </button>
                           )}
 
                           {isWorker && pData[4] === 1 && (
                             <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex flex-col gap-2">
-                              <p className="font-bold text-sm flex items-center gap-2"><span className="animate-pulse">⏳</span> Menunggu Klien</p>
+                              <p className="font-bold text-sm flex items-center gap-2">
+                                <svg className="w-4 h-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> 
+                                Menunggu Klien
+                              </p>
                               <p className="text-xs opacity-80 leading-relaxed">Dana otomatis masuk ke dompet Anda saat klien menekan Approve.</p>
+                            </div>
+                          )}
+
+                          {!isClient && !isWorker && (
+                            <div className="p-4 bg-gray-900/50 border border-gray-700 rounded-xl text-gray-400 text-xs">
+                              Anda bukan partisipan dalam Escrow ini.
                             </div>
                           )}
                         </div>
