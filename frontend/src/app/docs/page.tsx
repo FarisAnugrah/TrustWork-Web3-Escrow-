@@ -33,6 +33,12 @@ export default function DocsPage() {
         {/* Sidebar Navigation */}
         <aside className="w-full md:w-64 shrink-0">
           <div className="sticky top-12">
+            
+            <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-10 group">
+              <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              Back to Home
+            </Link>
+
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Documentation</h3>
             <ul className="space-y-2 border-l border-white/10 ml-2 pl-4">
               <li>
