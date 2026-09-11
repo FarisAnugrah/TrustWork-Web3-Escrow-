@@ -9,75 +9,91 @@ import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const { address, isConnecting } = useAccount();
-  const [loadingApprove, setLoadingApprove] = useState(false);
-  const [draftMilestones, setDraftMilestones] = useState<any>(null);
+  const [loadingApprove, setLoadingApprove] = useState<number | null>(null);
   
-  // State animasi masuk (transition screen)
   const [isInitializing, setIsInitializing] = useState(true);
   const [initText, setInitText] = useState('Syncing with Blockchain...');
   
-  const { data: projectCount, isFetched: countFetched } = useContractRead({
+  // Baca total project
+  const { data: projectCountRaw } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
     functionName: 'projectCount',
     watch: true,
   });
 
-  const { data: project, isFetched: projectFetched } = useContractRead({
-    address: TRUSTWORK_ADDRESS,
-    abi: TrustWorkABI,
-    functionName: 'projects',
-    args: [0n],
-    enabled: Number(projectCount) > 0,
-    watch: true,
-  });
+  const projectCount = projectCountRaw ? Number(projectCountRaw) : 0;
 
+  // Baca saldo USDC
   const { data: usdcBalance } = useBalance({
     address: address,
     token: USDC_ADDRESS,
     watch: true,
   });
 
-  const [activeProjectId, setActiveProjectId] = useState<number | null>(0);
+  const [activeProjectId, setActiveProjectId] = useState<number | null>(projectCount > 0 ? projectCount - 1 : null);
+  const [projectsData, setProjectsData] = useState<any[]>([]);
 
+  // Fetch semua project secara off-chain/manual-loop untuk hackathon
   useEffect(() => {
-    const saved = localStorage.getItem('trustwork_draft_0');
-    if (saved) {
-      try { setDraftMilestones(JSON.parse(saved)); } catch (e) {}
-    }
-  }, []);
+    if (projectCount === 0) return;
+    
+    const fetchAllProjects = async () => {
+      // Kita pakai fetch HTTP biasa ke RPC untuk menghindari kompleksitas multi-call wagmi v1 di MVP ini
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+      
+      const client = createPublicClient({
+        chain: sepolia,
+        transport: http('https://ethereum-sepolia-rpc.publicnode.com')
+      });
 
-  // Efek Loading Keren sebelum masuk Dashboard
+      const fetchedProjects = [];
+      for (let i = projectCount - 1; i >= 0; i--) { // Reverse order (terbaru di atas)
+        try {
+          const data = await client.readContract({
+            address: TRUSTWORK_ADDRESS,
+            abi: TrustWorkABI,
+            functionName: 'projects',
+            args: [BigInt(i)]
+          });
+          fetchedProjects.push({ id: i, data });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setProjectsData(fetchedProjects);
+    };
+
+    fetchAllProjects();
+  }, [projectCount]);
+
   useEffect(() => {
     if (isConnecting) {
       setInitText('Connecting to Wallet...');
       return;
     }
-    
     setInitText('Loading Smart Contract State...');
-    
     const timer = setTimeout(() => {
       setInitText('Decrypting Escrow Data...');
-      
       const timer2 = setTimeout(() => {
         setIsInitializing(false);
       }, 800);
       return () => clearTimeout(timer2);
     }, 1000);
-    
     return () => clearTimeout(timer);
   }, [isConnecting, address]);
 
-  const handleApproveMilestone = async () => {
+  const handleApproveMilestone = async (projectId: number) => {
     try {
-      setLoadingApprove(true);
+      setLoadingApprove(projectId);
       const approveLoading = toast.loading('Memproses pencairan dana...');
       
       const { request } = await prepareWriteContract({
         address: TRUSTWORK_ADDRESS,
         abi: TrustWorkABI,
         functionName: 'approveMilestone',
-        args: [0n],
+        args: [BigInt(projectId)],
       });
       const { hash } = await writeContract(request);
       await waitForTransaction({ hash });
@@ -92,23 +108,17 @@ export default function Dashboard() {
         </div>,
         { duration: 6000 }
       );
+      
+      // Auto refresh halaman biar state baru masuk
+      setTimeout(() => window.location.reload(), 2000);
+
     } catch (e: any) {
       toast.dismiss();
       toast.error('Gagal: ' + (e.shortMessage || e.message));
     } finally {
-      setLoadingApprove(false);
+      setLoadingApprove(null);
     }
   };
-
-  const isClient = project && address && (project as any)[0] === address;
-  const isWorker = project && address && (project as any)[1] === address;
-  
-  const currentMilestoneIndex = project ? Number((project as any)[5]) : 0;
-  const totalMilestones = draftMilestones?.milestones?.length || 2;
-  const currentTaskDesc = draftMilestones?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
-  const currentTaskPct = draftMilestones?.milestones?.[currentMilestoneIndex]?.percentage || '?';
-
-  const isCompleted = project && (project as any)[4] === 3;
 
   if (isInitializing) {
     return (
@@ -168,126 +178,150 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-white">Your Active Projects</h2>
-            <span className="text-sm text-gray-500">Showing {Number(projectCount) > 0 ? '1' : '0'} of {projectCount !== undefined ? Number(projectCount) : '0'}</span>
+            <span className="text-sm text-gray-500">Total: {projectCount} Escrows</span>
           </div>
           
-          {Number(projectCount) > 0 && project ? (
+          {projectCount > 0 && projectsData.length > 0 ? (
             <div className="space-y-4">
-              <div className={`glass-card rounded-2xl border transition-all duration-300 overflow-hidden ${
-                activeProjectId === 0 
-                ? (isCompleted ? 'bg-green-900/10 border-green-500/30 shadow-lg shadow-green-900/20' : 'bg-gray-900/80 border-purple-500/30 shadow-lg shadow-purple-900/20')
-                : 'bg-black/40 border-white/5 hover:border-white/20'
-              }`}>
+              {projectsData.map((item) => {
+                const pId = item.id;
+                const pData = item.data;
+                const isClient = address && pData[0] === address;
+                const isWorker = address && pData[1] === address;
+                const isCompleted = pData[4] === 3;
+                const currentMilestoneIndex = Number(pData[5]);
                 
-                <div 
-                  className="p-6 cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                  onClick={() => setActiveProjectId(activeProjectId === 0 ? null : 0)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${isCompleted ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
-                      #0
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white">Website Redesign MVP</h3>
-                      <p className="text-sm text-gray-500 font-mono mt-1">Client: {(project as any)[0].slice(0,6)}...{(project as any)[0].slice(-4)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-sm text-gray-500 mb-1">Locked Value</p>
-                      <p className="font-mono font-bold text-white">{(project as any)[2] ? Number((project as any)[2]) / 1e18 : 0} USDC</p>
-                    </div>
+                // Ambil info dari localstorage kalau ada
+                const saved = typeof window !== 'undefined' ? localStorage.getItem(`trustwork_draft_0`) : null; // Hackathon hack: we use draft 0 for demo
+                const draft = saved ? JSON.parse(saved) : null;
+                const totalMilestones = draft?.milestones?.length || 2;
+                const currentTaskDesc = draft?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
+                const currentTaskPct = draft?.milestones?.[currentMilestoneIndex]?.percentage || '?';
+
+                return (
+                  <div key={pId} className={`glass-card rounded-2xl border transition-all duration-300 overflow-hidden ${
+                    activeProjectId === pId 
+                    ? (isCompleted ? 'bg-green-900/10 border-green-500/30 shadow-lg shadow-green-900/20' : 'bg-gray-900/80 border-purple-500/30 shadow-lg shadow-purple-900/20')
+                    : 'bg-black/40 border-white/5 hover:border-white/20'
+                  }`}>
                     
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold border ${
-                      (project as any)[4] === 1 ? 'bg-blue-900/50 text-blue-300 border-blue-500/30' : 
-                      isCompleted ? 'bg-green-900/50 text-green-300 border-green-500/50' : 
-                      'bg-gray-800 text-gray-400'
-                    }`}>
-                      {(project as any)[4] === 1 ? 'ACTIVE' : isCompleted ? 'COMPLETED' : 'UNKNOWN'}
-                    </span>
-
-                    <svg className={`w-5 h-5 text-gray-400 transition-transform ${activeProjectId === 0 ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                {activeProjectId === 0 && (
-                  <div className="border-t border-white/5 p-6 bg-black/20">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div 
+                      className="p-6 cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                      onClick={() => setActiveProjectId(activeProjectId === pId ? null : pId)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${isCompleted ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                          #{pId}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-white">Escrow Contract</h3>
+                          <p className="text-sm text-gray-500 font-mono mt-1">Client: {pData[0].slice(0,6)}...{pData[0].slice(-4)}</p>
+                        </div>
+                      </div>
                       
-                      <div className="lg:col-span-2 space-y-6">
-                        <div className="grid grid-cols-2 gap-4 text-sm font-mono text-gray-400 p-4 bg-black/40 rounded-xl border border-white/5">
-                          <div>
-                            <p className="mb-1 text-gray-500">Client Address:</p>
-                            <p className="text-white truncate">{(project as any)[0]}</p>
-                          </div>
-                          <div>
-                            <p className="mb-1 text-gray-500">Worker Address:</p>
-                            <p className="text-purple-400 truncate">{(project as any)[1]}</p>
-                          </div>
+                      <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm text-gray-500 mb-1">Locked Value</p>
+                          <p className="font-mono font-bold text-white">{pData[2] ? Number(pData[2]) / 1e18 : 0} USDC</p>
                         </div>
-
-                        {(project as any)[4] === 1 && (
-                          <div className="p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl relative overflow-hidden">
-                            <div className="absolute left-0 top-0 w-1 h-full bg-purple-500"></div>
-                            <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                              <p className="text-white text-lg">"{currentTaskDesc}"</p>
-                              <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg text-sm whitespace-nowrap">Pay {currentTaskPct}%</span>
-                            </div>
-                          </div>
-                        )}
                         
-                        {isCompleted && (
-                          <div className="p-6 bg-green-900/20 border border-green-500/50 rounded-xl flex items-center gap-4">
-                            <div className="text-4xl">🎉</div>
-                            <div>
-                              <h3 className="text-lg font-bold text-green-400">Proyek Selesai</h3>
-                              <p className="text-green-200/80 text-sm mt-1">100% dana telah berhasil dicairkan ke dompet Pekerja.</p>
-                            </div>
-                          </div>
-                        )}
+                        <span className={`px-4 py-1.5 rounded-full text-xs font-bold border ${
+                          pData[4] === 1 ? 'bg-blue-900/50 text-blue-300 border-blue-500/30' : 
+                          isCompleted ? 'bg-green-900/50 text-green-300 border-green-500/50' : 
+                          'bg-gray-800 text-gray-400'
+                        }`}>
+                          {pData[4] === 1 ? 'ACTIVE' : isCompleted ? 'COMPLETED' : 'UNKNOWN'}
+                        </span>
+
+                        <svg className={`w-5 h-5 text-gray-400 transition-transform ${activeProjectId === pId ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
-
-                      <div>
-                        <div className="mb-6">
-                          <p className="text-gray-500 text-sm mb-2">Milestone Progress</p>
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                              <div className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-purple-500'} transition-all`} style={{ width: `${(currentMilestoneIndex / totalMilestones) * 100}%` }}></div>
-                            </div>
-                            <span className="text-sm font-mono text-white whitespace-nowrap">
-                              {isCompleted ? totalMilestones : currentMilestoneIndex} / {totalMilestones}
-                            </span>
-                          </div>
-                        </div>
-
-                        {isClient && (project as any)[4] === 1 && (
-                          <button 
-                            onClick={handleApproveMilestone} 
-                            disabled={loadingApprove}
-                            className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex justify-center items-center gap-2"
-                          >
-                            {loadingApprove ? (
-                              <><span className="animate-spin text-xl">↻</span> Memproses...</>
-                            ) : "✓ Approve & Pay Worker"}
-                          </button>
-                        )}
-
-                        {isWorker && (project as any)[4] === 1 && (
-                          <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex flex-col gap-2">
-                            <p className="font-bold text-sm flex items-center gap-2"><span className="animate-pulse">⏳</span> Menunggu Klien</p>
-                            <p className="text-xs opacity-80 leading-relaxed">Dana akan otomatis masuk ke dompet Anda saat klien menekan Approve.</p>
-                          </div>
-                        )}
-                      </div>
-
                     </div>
+
+                    {activeProjectId === pId && (
+                      <div className="border-t border-white/5 p-6 bg-black/20">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                          
+                          <div className="lg:col-span-2 space-y-6">
+                            <div className="grid grid-cols-2 gap-4 text-sm font-mono text-gray-400 p-4 bg-black/40 rounded-xl border border-white/5">
+                              <div>
+                                <p className="mb-1 text-gray-500">Client Address:</p>
+                                <p className="text-white truncate">{pData[0]}</p>
+                              </div>
+                              <div>
+                                <p className="mb-1 text-gray-500">Worker Address:</p>
+                                <p className="text-purple-400 truncate">{pData[1]}</p>
+                              </div>
+                            </div>
+
+                            {pData[4] === 1 && (
+                              <div className="p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl relative overflow-hidden">
+                                <div className="absolute left-0 top-0 w-1 h-full bg-purple-500"></div>
+                                <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                  <p className="text-white text-lg">"{currentTaskDesc}"</p>
+                                  <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg text-sm whitespace-nowrap">Pay {currentTaskPct}%</span>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {isCompleted && (
+                              <div className="p-6 bg-green-900/20 border border-green-500/50 rounded-xl flex items-center gap-4">
+                                <div className="text-4xl">🎉</div>
+                                <div>
+                                  <h3 className="text-lg font-bold text-green-400">Proyek Selesai</h3>
+                                  <p className="text-green-200/80 text-sm mt-1">100% dana telah berhasil dicairkan ke dompet Pekerja.</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="mb-6">
+                              <p className="text-gray-500 text-sm mb-2">Milestone Progress</p>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
+                                  <div className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-purple-500'} transition-all`} style={{ width: `${(currentMilestoneIndex / totalMilestones) * 100}%` }}></div>
+                                </div>
+                                <span className="text-sm font-mono text-white whitespace-nowrap">
+                                  {isCompleted ? totalMilestones : currentMilestoneIndex} / {totalMilestones}
+                                </span>
+                              </div>
+                            </div>
+
+                            {isClient && pData[4] === 1 && (
+                              <button 
+                                onClick={() => handleApproveMilestone(pId)} 
+                                disabled={loadingApprove === pId}
+                                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex justify-center items-center gap-2"
+                              >
+                                {loadingApprove === pId ? (
+                                  <><span className="animate-spin text-xl">↻</span> Memproses...</>
+                                ) : "✓ Approve & Pay Worker"}
+                              </button>
+                            )}
+
+                            {isWorker && pData[4] === 1 && (
+                              <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex flex-col gap-2">
+                                <p className="font-bold text-sm flex items-center gap-2"><span className="animate-pulse">⏳</span> Menunggu Klien</p>
+                                <p className="text-xs opacity-80 leading-relaxed">Dana otomatis masuk ke dompet Anda saat klien menekan Approve.</p>
+                              </div>
+                            )}
+
+                            {!isClient && !isWorker && (
+                              <div className="p-4 bg-gray-900/50 border border-gray-700 rounded-xl text-gray-400 text-xs">
+                                Anda bukan partisipan dalam Escrow ini.
+                              </div>
+                            )}
+                          </div>
+
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
           ) : (
             <div className="glass-card rounded-2xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center">
