@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { prepareWriteContract, writeContract, waitForTransaction } from '@wagmi/core';
 import { TrustWorkABI } from '@/lib/TrustWorkABI';
@@ -7,13 +7,17 @@ import { MockUSDCABI } from '@/lib/MockUSDCABI';
 import { TRUSTWORK_ADDRESS, USDC_ADDRESS } from '@/lib/config';
 import { parseUnits } from 'viem';
 import Link from 'next/link';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 export default function CreateProject() {
   const { address } = useAccount();
+  const [mounted, setMounted] = useState(false);
   const [worker, setWorker] = useState('');
   const [amount, setAmount] = useState('');
   const [status, setStatus] = useState('');
   const [isDeploying, setIsDeploying] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const handleCreate = async () => {
     if (!worker || !amount) return alert('Isi data dengan lengkap');
@@ -54,27 +58,47 @@ export default function CreateProject() {
     }
   };
 
+  if (!mounted) return null;
+
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12">
-      <div className="max-w-4xl mx-auto mt-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto">
+      {/* Header with Wallet */}
+      <div className="max-w-4xl mx-auto flex justify-end mb-4">
+        <ConnectButton />
+      </div>
+
+      <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-50 pointer-events-auto">
         <div>
           <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white mb-8 inline-block">← Back</Link>
           <h1 className="text-4xl font-extrabold mb-4">Secure a Gig</h1>
           <p className="text-gray-400 mb-8">Lock funds in smart contract. Released only when milestones are approved.</p>
         </div>
         
-        <div className="glass-card rounded-3xl p-8 border border-white/10 shadow-2xl relative">
+        <div className="glass-card rounded-3xl p-8 border border-white/10 shadow-2xl bg-black/80">
           <div className="space-y-6">
             <div>
               <label className="block text-sm text-gray-300 mb-2">Worker Address</label>
-              <input className="w-full bg-black/50 border border-gray-700 p-3 rounded-xl text-white font-mono" placeholder="0x..." onChange={e => setWorker(e.target.value)} />
+              <input 
+                className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white font-mono pointer-events-auto" 
+                placeholder="0x..." 
+                onChange={e => setWorker(e.target.value)} 
+              />
             </div>
             <div>
               <label className="block text-sm text-gray-300 mb-2">Total Amount (mUSDC)</label>
-              <input className="w-full bg-black/50 border border-gray-700 p-3 rounded-xl text-white font-mono" placeholder="100" type="number" onChange={e => setAmount(e.target.value)} />
+              <input 
+                className="w-full bg-gray-900 border border-gray-700 p-3 rounded-xl text-white font-mono pointer-events-auto" 
+                placeholder="100" 
+                type="number" 
+                onChange={e => setAmount(e.target.value)} 
+              />
             </div>
-            <button onClick={handleCreate} disabled={!address || isDeploying} className="w-full bg-white text-black px-4 py-4 rounded-xl font-bold transition-all disabled:opacity-50">
-              {isDeploying ? status : (address ? 'Lock Funds' : 'Connect Wallet')}
+            <button 
+              onClick={handleCreate} 
+              disabled={!address || isDeploying} 
+              className="w-full bg-white text-black px-4 py-4 rounded-xl font-bold transition-all disabled:opacity-50 pointer-events-auto cursor-pointer"
+            >
+              {isDeploying ? status : (address ? 'Lock Funds' : 'Connect Wallet First')}
             </button>
           </div>
         </div>
