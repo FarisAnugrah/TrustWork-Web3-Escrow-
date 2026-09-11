@@ -5,6 +5,7 @@ import { TrustWorkABI } from '@/lib/TrustWorkABI';
 import { MockUSDCABI } from '@/lib/MockUSDCABI';
 import { TRUSTWORK_ADDRESS, USDC_ADDRESS } from '@/lib/config';
 import { parseUnits } from 'viem';
+import Link from 'next/link';
 
 export default function CreateProject() {
   const { address } = useAccount();
@@ -19,43 +20,53 @@ export default function CreateProject() {
 
   const handleCreate = async () => {
     if (!worker || !amount || !write) return alert('Isi data dengan lengkap');
-    
-    write({
-      args: [worker as `0x${string}`, parseUnits(amount, 18), USDC_ADDRESS, [50, 50]],
-    });
+    write({ args: [worker as `0x${string}`, parseUnits(amount, 18), USDC_ADDRESS, [50, 50]] });
   };
 
   return (
-    <div className="p-8 max-w-md mx-auto mt-10 bg-white shadow-lg rounded-xl border">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Buat Proyek Baru</h1>
-      
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Address Pekerja (Worker)</label>
-        <input 
-          className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500 text-black" 
-          placeholder="0x..." 
-          onChange={e => setWorker(e.target.value)} 
-        />
-      </div>
+    <div className="min-h-screen bg-black text-white p-8">
+      <div className="max-w-md mx-auto mt-12">
+        <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white mb-6 inline-block">
+          ← Back to Dashboard
+        </Link>
+        
+        <div className="glass-card rounded-2xl p-8 border border-gray-800">
+          <h1 className="text-2xl font-bold mb-8 text-white tracking-tight">Deploy Escrow Contract</h1>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Worker Wallet Address</label>
+              <input 
+                className="w-full bg-black/50 border border-gray-700 text-white p-3 rounded-lg focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono text-sm transition-all" 
+                placeholder="0x..." 
+                onChange={e => setWorker(e.target.value)} 
+              />
+            </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Dana (USDC)</label>
-        <input 
-          className="border border-gray-300 p-2 w-full rounded focus:ring-blue-500 focus:border-blue-500 text-black" 
-          placeholder="100" 
-          type="number" 
-          onChange={e => setAmount(e.target.value)} 
-        />
-        <p className="text-xs text-gray-500 mt-1">Milestone di-set otomatis 50% DP, 50% Final.</p>
-      </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Total Funding (Mock USDC)</label>
+              <div className="relative">
+                <input 
+                  className="w-full bg-black/50 border border-gray-700 text-white p-3 rounded-lg focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono text-sm transition-all" 
+                  placeholder="100.00" 
+                  type="number" 
+                  onChange={e => setAmount(e.target.value)} 
+                />
+                <span className="absolute right-4 top-3.5 text-gray-500 text-sm font-medium">USDC</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Milestones: 50% Upfront, 50% Delivery.</p>
+            </div>
 
-      <button 
-        onClick={handleCreate} 
-        disabled={!address}
-        className="bg-blue-600 disabled:bg-gray-400 text-white px-4 py-3 w-full rounded-lg font-bold hover:bg-blue-700 transition-colors"
-      >
-        {address ? 'Lock Dana & Buat Proyek' : 'Connect Wallet Dulu'}
-      </button>
+            <button 
+              onClick={handleCreate} 
+              disabled={!address}
+              className="w-full bg-white text-black disabled:bg-gray-800 disabled:text-gray-500 px-4 py-3.5 rounded-lg font-bold hover:bg-gray-200 transition-colors mt-4"
+            >
+              {address ? 'Sign & Deploy' : 'Connect Wallet to Deploy'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
