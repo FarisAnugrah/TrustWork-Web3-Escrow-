@@ -9,23 +9,34 @@ import { parseUnits } from 'viem';
 import Link from 'next/link';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
+interface MilestoneInput {
+  percentage: number;
+  description: string;
+}
+
 export default function CreateProject() {
   const { address } = useAccount();
   const [mounted, setMounted] = useState(false);
   const [worker, setWorker] = useState('');
   const [amount, setAmount] = useState('');
-  const [milestones, setMilestones] = useState<number[]>([50, 50]); // Default dynamic state
+  
+  // State baru dengan deskripsi
+  const [milestones, setMilestones] = useState<MilestoneInput[]>([
+    { percentage: 30, description: 'Desain UI/UX Selesai' },
+    { percentage: 70, description: 'Testing & Deployment Selesai' }
+  ]);
+  
   const [status, setStatus] = useState('');
   const [isDeploying, setIsDeploying] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  const totalPercentage = milestones.reduce((a, b) => a + b, 0);
+  const totalPercentage = milestones.reduce((a, b) => a + (b.percentage || 0), 0);
   const isValidPercentage = totalPercentage === 100;
 
   const handleAddMilestone = () => {
     if (milestones.length < 5) {
-      setMilestones([...milestones, 0]);
+      setMilestones([...milestones, { percentage: 0, description: '' }]);
     }
   };
 
@@ -35,10 +46,13 @@ export default function CreateProject() {
     }
   };
 
-  const handleMilestoneChange = (index: number, value: string) => {
-    const numValue = parseInt(value) || 0;
+  const handleMilestoneChange = (index: number, field: 'percentage' | 'description', value: string) => {
     const newMilestones = [...milestones];
-    newMilestones[index] = numValue;
+    if (field === 'percentage') {
+      newMilestones[index].percentage = parseInt(value) || 0;
+    } else {
+      newMilestones[index].description = value;
+    }
     setMilestones(newMilestones);
   };
 
@@ -46,9 +60,25 @@ export default function CreateProject() {
     if (!worker || !amount) return alert('Isi data worker dan amount dengan lengkap');
     if (!isValidPercentage) return alert('Total persentase milestone harus tepat 100%');
     
+    // Validasi input deskripsi
+    const hasEmptyDesc = milestones.some(m => !m.description.trim());
+    if (hasEmptyDesc) return alert('Harap isi semua deskripsi tugas (Task Description)');
+    
     try {
       setIsDeploying(true);
       const amountWei = parseUnits(amount, 18);
+      
+      // Ambil hanya array angka persentase untuk dikirim ke Smart Contract
+      const percentagesArr = milestones.map(m => m.percentage);
+
+      // (Opsional) Simpan deskripsi ini ke localStorage untuk ditampilkan di Dashboard MVP
+      // Karena menyimpan string panjang di Smart Contract itu mahal (gas fee tinggi).
+      const tempProjectData = {
+        worker,
+        totalAmount: amount,
+        milestones: milestones
+      };
+      localStorage.setItem('trustwork_draft_0', JSON.stringify(tempProjectData));
 
       setStatus('Minta Izin (Approve)...');
       const { request: approveReq } = await prepareWriteContract({
@@ -65,7 +95,7 @@ export default function CreateProject() {
         address: TRUSTWORK_ADDRESS,
         abi: TrustWorkABI,
         functionName: 'createProject',
-        args: [worker as `0x${string}`, amountWei, USDC_ADDRESS, milestones],
+        args: [worker as `0x${string}`, amountWei, USDC_ADDRESS, percentagesArr],
       });
       const { hash: createHash } = await writeContract(createReq);
       await waitForTransaction({ hash: createHash });
@@ -82,12 +112,10 @@ export default function CreateProject() {
     }
   };
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-black" />;
-  }
+  if (!mounted) return <div className="min-h-screen bg-black" />;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto">
       <div className="max-w-6xl mx-auto flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
         <Link href="/dashboard" className="text-gray-400 hover:text-white">← Back to Dashboard</Link>
         <ConnectButton />
@@ -96,22 +124,21 @@ export default function CreateProject() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-12">
         <div className="lg:col-span-2">
           <h1 className="text-4xl font-extrabold mb-4">Secure a Gig</h1>
-          <p className="text-gray-400 mb-8">Lock funds in smart contract. Released only when milestones are approved.</p>
+          <p className="text-gray-400 mb-8">Lock funds in smart contract. Released only when specific tasks are approved.</p>
           
           <div className="glass-card rounded-2xl p-6 border border-white/5">
             <h3 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Dynamic Milestones</h3>
             <p className="text-sm text-gray-500 mb-6">
-              You can set custom payout stages. The Smart Contract will hold the funds and pay the exact percentage you set for each milestone step.
+              Define the specific tasks (deliverables) and the percentage of funds allocated to each. 
+              The Smart Contract handles the math.
             </p>
             <div className="flex items-center justify-between p-4 rounded-xl bg-black/50 border border-gray-800">
-              <span className="text-gray-400">Total Percentage:</span>
+              <span className="text-gray-400">Total Funds Distributed:</span>
               <span className={`text-xl font-bold ${isValidPercentage ? 'text-green-400' : 'text-red-400'}`}>
                 {totalPercentage}%
               </span>
             </div>
-            {!isValidPercentage && (
-              <p className="text-red-400 text-xs mt-2">Must equal exactly 100% to deploy contract.</p>
-            )}
+            {!isValidPercentage && <p className="text-red-400 text-xs mt-2">Must equal exactly 100%.</p>}
           </div>
         </div>
         
@@ -120,51 +147,51 @@ export default function CreateProject() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Worker Address</label>
-                <input 
-                  className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono text-sm" 
-                  placeholder="0x..." 
-                  value={worker}
-                  onChange={e => setWorker(e.target.value)} 
-                />
+                <input className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono text-sm" placeholder="0x..." value={worker} onChange={e => setWorker(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Total Amount (mUSDC)</label>
-                <input 
-                  className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono text-sm" 
-                  placeholder="100" 
-                  type="number" 
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)} 
-                />
+                <input className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono text-sm" placeholder="100" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
               </div>
             </div>
 
             <div className="pt-4 border-t border-gray-800">
               <div className="flex justify-between items-center mb-4">
-                <label className="block text-sm text-gray-300">Milestone Payouts (%)</label>
+                <label className="block text-sm text-gray-300">Tasks & Payouts</label>
                 <button onClick={handleAddMilestone} disabled={milestones.length >= 5} className="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded">
-                  + Add Stage
+                  + Add Task
                 </button>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {milestones.map((m, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="text-gray-500 font-mono text-xs w-8">#{i+1}</span>
-                    <input 
-                      type="number" 
-                      className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-mono" 
-                      value={m}
-                      onChange={(e) => handleMilestoneChange(i, e.target.value)}
-                    />
-                    <span className="text-gray-500">%</span>
-                    <button 
-                      onClick={() => handleRemoveMilestone(i)}
-                      disabled={milestones.length <= 1}
-                      className="text-gray-600 hover:text-red-400 p-2 disabled:opacity-0"
-                    >
-                      ✕
-                    </button>
+                  <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-black/30 p-3 rounded-xl border border-gray-800">
+                    <span className="text-gray-500 font-mono text-xs w-6 shrink-0 pt-3 sm:pt-0">#{i+1}</span>
+                    
+                    <div className="w-full">
+                      <input 
+                        type="text" 
+                        placeholder="Task description (e.g. Frontend Done)"
+                        className="w-full bg-transparent border-b border-gray-700 focus:border-purple-500 p-2 text-white text-sm outline-none" 
+                        value={m.description}
+                        onChange={(e) => handleMilestoneChange(i, 'description', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <input 
+                        type="number" 
+                        className="w-20 bg-black border border-gray-700 p-2 rounded-lg text-white font-mono text-sm text-center" 
+                        value={m.percentage}
+                        onChange={(e) => handleMilestoneChange(i, 'percentage', e.target.value)}
+                      />
+                      <span className="text-gray-500 text-sm">%</span>
+                      <button 
+                        onClick={() => handleRemoveMilestone(i)}
+                        disabled={milestones.length <= 1}
+                        className="text-gray-600 hover:text-red-400 p-2 disabled:opacity-0"
+                      >✕</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -172,9 +199,7 @@ export default function CreateProject() {
             
             <div className="pt-6">
               {!address ? (
-                <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-xl text-red-400 text-center text-sm">
-                  Harap hubungkan dompet (Connect Wallet) terlebih dahulu.
-                </div>
+                <div className="p-4 bg-red-900/20 border border-red-500/50 rounded-xl text-red-400 text-center text-sm">Harap hubungkan dompet (Connect Wallet) terlebih dahulu.</div>
               ) : (
                 <button 
                   onClick={handleCreate} 

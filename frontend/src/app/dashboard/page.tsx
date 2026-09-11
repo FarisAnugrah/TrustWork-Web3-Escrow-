@@ -4,11 +4,12 @@ import { prepareWriteContract, writeContract, waitForTransaction } from '@wagmi/
 import { TrustWorkABI } from '@/lib/TrustWorkABI';
 import { TRUSTWORK_ADDRESS, USDC_ADDRESS } from '@/lib/config';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Dashboard() {
   const { address } = useAccount();
   const [loadingApprove, setLoadingApprove] = useState(false);
+  const [draftMilestones, setDraftMilestones] = useState<any>(null);
   
   const { data: projectCount } = useContractRead({
     address: TRUSTWORK_ADDRESS,
@@ -26,12 +27,21 @@ export default function Dashboard() {
     watch: true,
   });
 
-  // Ambil saldo mUSDC khusus untuk wallet yang sedang terhubung
   const { data: usdcBalance } = useBalance({
     address: address,
     token: USDC_ADDRESS,
     watch: true,
   });
+
+  useEffect(() => {
+    // Ambil data deskripsi milestone dari localStorage (Hybrid off-chain data approach for hackathon)
+    const saved = localStorage.getItem('trustwork_draft_0');
+    if (saved) {
+      try {
+        setDraftMilestones(JSON.parse(saved));
+      } catch (e) {}
+    }
+  }, []);
 
   const handleApproveMilestone = async () => {
     try {
@@ -54,9 +64,16 @@ export default function Dashboard() {
 
   const isClient = project && address && (project as any)[0] === address;
   const isWorker = project && address && (project as any)[1] === address;
+  
+  const currentMilestoneIndex = project ? Number((project as any)[5]) : 0;
+  
+  // Hitung jumlah milestone (Jika ada di local storage pakai itu, jika tidak asumsi 2)
+  const totalMilestones = draftMilestones?.milestones?.length || 2;
+  const currentTaskDesc = draftMilestones?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
+  const currentTaskPct = draftMilestones?.milestones?.[currentMilestoneIndex]?.percentage || '?';
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative selection:bg-purple-900 selection:text-white">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto">
       <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">
@@ -77,7 +94,6 @@ export default function Dashboard() {
           </Link>
         </header>
         
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
             <p className="text-gray-400 text-sm font-medium mb-2">My Wallet Balance (mUSDC)</p>
@@ -98,7 +114,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Projects Area */}
         <div className="mb-8">
           <h2 className="text-xl font-bold text-white mb-6">Your Active Projects</h2>
           
@@ -125,34 +140,43 @@ export default function Dashboard() {
                   <p className="text-purple-400 truncate">{(project as any)[1]}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-gray-500">Milestone Progress:</p>
-                  <p className="text-white text-lg font-bold">{(project as any)[5]} <span className="text-sm font-normal text-gray-500">/ 2 Milestones Approved</span></p>
+                  <p className="mb-1 text-gray-500">Total Locked Value:</p>
+                  <p className="text-white text-lg font-bold">{(project as any)[2] ? Number((project as any)[2]) / 1e18 : 0} <span className="text-sm font-normal text-gray-500">mUSDC</span></p>
                 </div>
                 <div>
-                  <p className="mb-1 text-gray-500">Total Locked Value:</p>
-                  <p className="text-white text-lg font-bold">100 <span className="text-sm font-normal text-gray-500">mUSDC</span></p>
+                  <p className="mb-1 text-gray-500">Milestone Progress:</p>
+                  <p className="text-white text-lg font-bold">{currentMilestoneIndex} <span className="text-sm font-normal text-gray-500">/ {totalMilestones} Approved</span></p>
                 </div>
               </div>
               
+              {(project as any)[4] === 1 && (
+                <div className="mb-8 p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl">
+                  <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
+                  <div className="flex justify-between items-center">
+                    <p className="text-white text-xl">"{currentTaskDesc}"</p>
+                    <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg">Pay {currentTaskPct}%</span>
+                  </div>
+                </div>
+              )}
+
               {isClient && (project as any)[4] === 1 && (
                 <div className="flex flex-col items-end">
-                  <p className="text-sm text-gray-400 mb-2">Hanya Anda (Klien) yang bisa menyetujui pembayaran ini.</p>
                   <button 
                     onClick={handleApproveMilestone} 
                     disabled={loadingApprove}
                     className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                   >
-                    {loadingApprove ? "Memproses Pencairan..." : "Approve Next Milestone (Pay Worker)"}
+                    {loadingApprove ? "Memproses Pencairan..." : "Approve Milestone (Pay Worker)"}
                   </button>
                 </div>
               )}
 
               {isWorker && (project as any)[4] === 1 && (
-                <div className="p-5 bg-purple-900/20 border border-purple-500/30 rounded-xl text-purple-200 flex items-start gap-4">
+                <div className="p-5 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex items-start gap-4">
                   <span className="text-2xl">⏳</span>
                   <div>
                     <p className="font-bold mb-1">Menunggu Persetujuan Klien</p>
-                    <p className="text-sm opacity-80">Anda adalah Pekerja di proyek ini. Kerjakan tugas Anda dan tunggu Klien menekan tombol Approve. Jika disetujui, mUSDC akan otomatis masuk ke dompet Anda di atas.</p>
+                    <p className="text-sm opacity-80">Selesaikan tugas <b>"{currentTaskDesc}"</b> dan tunggu Klien menekan tombol Approve. Jika disetujui, mUSDC akan otomatis masuk ke dompet Anda.</p>
                   </div>
                 </div>
               )}
