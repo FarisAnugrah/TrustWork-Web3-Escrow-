@@ -34,12 +34,9 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    // Ambil data deskripsi milestone dari localStorage (Hybrid off-chain data approach for hackathon)
     const saved = localStorage.getItem('trustwork_draft_0');
     if (saved) {
-      try {
-        setDraftMilestones(JSON.parse(saved));
-      } catch (e) {}
+      try { setDraftMilestones(JSON.parse(saved)); } catch (e) {}
     }
   }, []);
 
@@ -66,11 +63,11 @@ export default function Dashboard() {
   const isWorker = project && address && (project as any)[1] === address;
   
   const currentMilestoneIndex = project ? Number((project as any)[5]) : 0;
-  
-  // Hitung jumlah milestone (Jika ada di local storage pakai itu, jika tidak asumsi 2)
   const totalMilestones = draftMilestones?.milestones?.length || 2;
   const currentTaskDesc = draftMilestones?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
   const currentTaskPct = draftMilestones?.milestones?.[currentMilestoneIndex]?.percentage || '?';
+
+  const isCompleted = project && (project as any)[4] === 3;
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto">
@@ -118,15 +115,15 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold text-white mb-6">Your Active Projects</h2>
           
           {Number(projectCount) > 0 && project ? (
-            <div className="glass-card p-8 rounded-2xl border border-white/10 shadow-lg bg-gray-900/50">
+            <div className={`glass-card p-8 rounded-2xl border shadow-lg ${isCompleted ? 'bg-green-900/10 border-green-500/30' : 'bg-gray-900/50 border-white/10'}`}>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-white">Project #0</h2>
                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold border ${
                   (project as any)[4] === 1 ? 'bg-blue-900/50 text-blue-300 border-blue-500/30' : 
-                  (project as any)[4] === 3 ? 'bg-green-900/50 text-green-300 border-green-500/30' : 
+                  isCompleted ? 'bg-green-900/50 text-green-300 border-green-500/50' : 
                   'bg-gray-800 text-gray-400'
                 }`}>
-                  {(project as any)[4] === 1 ? 'FUNDED / ACTIVE' : (project as any)[4] === 3 ? 'COMPLETED' : 'UNKNOWN'}
+                  {(project as any)[4] === 1 ? 'FUNDED / ACTIVE' : isCompleted ? '✨ COMPLETED' : 'UNKNOWN'}
                 </span>
               </div>
 
@@ -145,39 +142,55 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="mb-1 text-gray-500">Milestone Progress:</p>
-                  <p className="text-white text-lg font-bold">{currentMilestoneIndex} <span className="text-sm font-normal text-gray-500">/ {totalMilestones} Approved</span></p>
+                  <p className={`${isCompleted ? 'text-green-400' : 'text-white'} text-lg font-bold`}>
+                    {isCompleted ? totalMilestones : currentMilestoneIndex} <span className="text-sm font-normal text-gray-500">/ {totalMilestones} Approved</span>
+                  </p>
                 </div>
               </div>
               
+              {/* Tampilan Jika Proyek Masih Berjalan (FUNDED) */}
               {(project as any)[4] === 1 && (
-                <div className="mb-8 p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl">
-                  <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
-                  <div className="flex justify-between items-center">
-                    <p className="text-white text-xl">"{currentTaskDesc}"</p>
-                    <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg">Pay {currentTaskPct}%</span>
+                <>
+                  <div className="mb-8 p-6 bg-purple-900/10 border border-purple-500/30 rounded-xl">
+                    <h3 className="text-purple-300 font-bold mb-2">Current Task in Progress:</h3>
+                    <div className="flex justify-between items-center">
+                      <p className="text-white text-xl">"{currentTaskDesc}"</p>
+                      <span className="bg-purple-600 text-white font-bold px-4 py-2 rounded-lg">Pay {currentTaskPct}%</span>
+                    </div>
                   </div>
-                </div>
+
+                  {isClient && (
+                    <div className="flex flex-col items-end">
+                      <button 
+                        onClick={handleApproveMilestone} 
+                        disabled={loadingApprove}
+                        className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                      >
+                        {loadingApprove ? "Memproses Pencairan..." : "Approve Milestone (Pay Worker)"}
+                      </button>
+                    </div>
+                  )}
+
+                  {isWorker && (
+                    <div className="p-5 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex items-start gap-4">
+                      <span className="text-2xl">⏳</span>
+                      <div>
+                        <p className="font-bold mb-1">Menunggu Persetujuan Klien</p>
+                        <p className="text-sm opacity-80">Selesaikan tugas <b>"{currentTaskDesc}"</b> dan tunggu Klien menekan tombol Approve. Jika disetujui, mUSDC akan otomatis masuk ke dompet Anda.</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
-              {isClient && (project as any)[4] === 1 && (
-                <div className="flex flex-col items-end">
-                  <button 
-                    onClick={handleApproveMilestone} 
-                    disabled={loadingApprove}
-                    className="bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-8 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                  >
-                    {loadingApprove ? "Memproses Pencairan..." : "Approve Milestone (Pay Worker)"}
-                  </button>
-                </div>
-              )}
-
-              {isWorker && (project as any)[4] === 1 && (
-                <div className="p-5 bg-blue-900/20 border border-blue-500/30 rounded-xl text-blue-200 flex items-start gap-4">
-                  <span className="text-2xl">⏳</span>
-                  <div>
-                    <p className="font-bold mb-1">Menunggu Persetujuan Klien</p>
-                    <p className="text-sm opacity-80">Selesaikan tugas <b>"{currentTaskDesc}"</b> dan tunggu Klien menekan tombol Approve. Jika disetujui, mUSDC akan otomatis masuk ke dompet Anda.</p>
-                  </div>
+              {/* Tampilan Jika Proyek Selesai (COMPLETED) */}
+              {isCompleted && (
+                <div className="p-8 bg-green-900/20 border border-green-500/50 rounded-2xl text-center">
+                  <div className="text-5xl mb-4">🎉</div>
+                  <h3 className="text-2xl font-bold text-green-400 mb-2">Proyek Selesai!</h3>
+                  <p className="text-green-200/80 max-w-lg mx-auto">
+                    Seluruh {totalMilestones} milestone telah disetujui. 100% dana telah berhasil dicairkan ke dompet Pekerja melalui TrustWork Smart Contract.
+                  </p>
                 </div>
               )}
             </div>
