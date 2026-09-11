@@ -36,4 +36,4 @@ Berikut adalah daftar file yang telah dibuat dalam folder `docs/`:
 - [x] Menulis *test script* lokal untuk Smart Contract.
 - [ ] *Deploy* Smart Contract ke Testnet (Polygon Amoy / Sepolia).
 - [x] Setup Next.js + Tailwind + RainbowKit.
-- [ ] Integrasi ABI Smart Contract ke Frontend.
+- [x] Integrasi ABI Smart Contract ke Frontend.

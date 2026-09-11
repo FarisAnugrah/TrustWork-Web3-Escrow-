@@ -1,0 +1,3 @@
+// Update address ini setelah deploy ke Testnet
+export const TRUSTWORK_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+export const USDC_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
