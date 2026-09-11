@@ -14,7 +14,6 @@ export default function Dashboard() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initText, setInitText] = useState('Syncing with Blockchain...');
   
-  // Baca total project
   const { data: projectCountRaw } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
@@ -24,22 +23,19 @@ export default function Dashboard() {
 
   const projectCount = projectCountRaw ? Number(projectCountRaw) : 0;
 
-  // Baca saldo USDC
   const { data: usdcBalance } = useBalance({
     address: address,
     token: USDC_ADDRESS,
     watch: true,
   });
 
-  const [activeProjectId, setActiveProjectId] = useState<number | null>(projectCount > 0 ? projectCount - 1 : null);
+  const [activeProjectId, setActiveProjectId] = useState<number | null>(null);
   const [projectsData, setProjectsData] = useState<any[]>([]);
 
-  // Fetch semua project secara off-chain/manual-loop untuk hackathon
   useEffect(() => {
     if (projectCount === 0) return;
     
     const fetchAllProjects = async () => {
-      // Kita pakai fetch HTTP biasa ke RPC untuk menghindari kompleksitas multi-call wagmi v1 di MVP ini
       const { createPublicClient, http } = await import('viem');
       const { sepolia } = await import('viem/chains');
       
@@ -49,7 +45,8 @@ export default function Dashboard() {
       });
 
       const fetchedProjects = [];
-      for (let i = projectCount - 1; i >= 0; i--) { // Reverse order (terbaru di atas)
+      // Mengubah urutan array menjadi Ascending (0, 1, 2, 3...)
+      for (let i = 0; i < projectCount; i++) {
         try {
           const data = await client.readContract({
             address: TRUSTWORK_ADDRESS,
@@ -63,6 +60,11 @@ export default function Dashboard() {
         }
       }
       setProjectsData(fetchedProjects);
+      
+      // Buka accordion secara otomatis untuk proyek terbaru (ID tertinggi)
+      if (fetchedProjects.length > 0) {
+        setActiveProjectId(projectCount - 1);
+      }
     };
 
     fetchAllProjects();
@@ -109,7 +111,6 @@ export default function Dashboard() {
         { duration: 6000 }
       );
       
-      // Auto refresh halaman biar state baru masuk
       setTimeout(() => window.location.reload(), 2000);
 
     } catch (e: any) {
@@ -191,9 +192,12 @@ export default function Dashboard() {
                 const isCompleted = pData[4] === 3;
                 const currentMilestoneIndex = Number(pData[5]);
                 
-                // Ambil info dari localstorage kalau ada
-                const saved = typeof window !== 'undefined' ? localStorage.getItem(`trustwork_draft_0`) : null; // Hackathon hack: we use draft 0 for demo
+                // Ambil Nama Proyek & Deskripsi Milestone dari LocalStorage berdasarkan ID
+                const saved = typeof window !== 'undefined' ? localStorage.getItem(`trustwork_draft_${pId}`) : null;
                 const draft = saved ? JSON.parse(saved) : null;
+                
+                // Terapkan data off-chain / fallback on-chain
+                const projectName = draft?.name || `Escrow Contract #${pId}`;
                 const totalMilestones = draft?.milestones?.length || 2;
                 const currentTaskDesc = draft?.milestones?.[currentMilestoneIndex]?.description || `Task #${currentMilestoneIndex + 1}`;
                 const currentTaskPct = draft?.milestones?.[currentMilestoneIndex]?.percentage || '?';
@@ -214,7 +218,7 @@ export default function Dashboard() {
                           #{pId}
                         </div>
                         <div>
-                          <h3 className="text-lg font-bold text-white">Escrow Contract</h3>
+                          <h3 className="text-lg font-bold text-white">{projectName}</h3>
                           <p className="text-sm text-gray-500 font-mono mt-1">Client: {pData[0].slice(0,6)}...{pData[0].slice(-4)}</p>
                         </div>
                       </div>

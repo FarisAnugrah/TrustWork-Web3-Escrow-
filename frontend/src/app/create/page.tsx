@@ -11,13 +11,14 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import toast from 'react-hot-toast';
 
 interface MilestoneInput {
-  percentage: string; // Ubah ke string agar '0' bisa diketik leluasa
+  percentage: string;
   description: string;
 }
 
 export default function CreateProject() {
   const { address } = useAccount();
   const [mounted, setMounted] = useState(false);
+  const [projectName, setProjectName] = useState('');
   const [worker, setWorker] = useState('');
   const [amount, setAmount] = useState('');
   
@@ -31,7 +32,6 @@ export default function CreateProject() {
 
   useEffect(() => setMounted(true), []);
 
-  // Konversi aman saat kalkulasi total
   const totalPercentage = milestones.reduce((a, b) => a + (parseInt(b.percentage) || 0), 0);
   const isValidPercentage = totalPercentage === 100;
 
@@ -50,7 +50,6 @@ export default function CreateProject() {
   const handleMilestoneChange = (index: number, field: 'percentage' | 'description', value: string) => {
     const newMilestones = [...milestones];
     if (field === 'percentage') {
-      // Biarkan string masuk apa adanya agar user bisa ketik "50" tanpa terpotong
       newMilestones[index].percentage = value;
     } else {
       newMilestones[index].description = value;
@@ -59,7 +58,7 @@ export default function CreateProject() {
   };
 
   const handleCreate = async () => {
-    if (!worker || !amount) return toast.error('Isi data worker dan amount dengan lengkap');
+    if (!projectName || !worker || !amount) return toast.error('Isi nama proyek, worker, dan amount dengan lengkap');
     if (!isValidPercentage) return toast.error('Total persentase milestone harus tepat 100%');
     
     const hasEmptyDesc = milestones.some(m => !m.description.trim());
@@ -68,11 +67,28 @@ export default function CreateProject() {
     try {
       setIsDeploying(true);
       const amountWei = parseUnits(amount, 18);
-      // Baru ubah ke Number saat dikirim ke Smart Contract
       const percentagesArr = milestones.map(m => parseInt(m.percentage) || 0);
 
-      const tempProjectData = { worker, totalAmount: amount, milestones: milestones };
-      localStorage.setItem('trustwork_draft_0', JSON.stringify(tempProjectData));
+      // Baca total proyek saat ini untuk menentukan ID proyek baru (untuk penyimpanan off-chain)
+      const { createPublicClient, http } = await import('viem');
+      const { sepolia } = await import('viem/chains');
+      const client = createPublicClient({ chain: sepolia, transport: http('https://ethereum-sepolia-rpc.publicnode.com') });
+      
+      const currentCount = await client.readContract({
+        address: TRUSTWORK_ADDRESS,
+        abi: TrustWorkABI,
+        functionName: 'projectCount',
+      });
+      const newProjectId = Number(currentCount);
+
+      // Simpan Nama Proyek & Deskripsi secara Off-Chain
+      const tempProjectData = { 
+        name: projectName,
+        worker, 
+        totalAmount: amount, 
+        milestones: milestones 
+      };
+      localStorage.setItem(`trustwork_draft_${newProjectId}`, JSON.stringify(tempProjectData));
 
       setStatus('Minta Izin (Approve)...');
       const approveLoading = toast.loading('Meminta izin akses USDC...');
@@ -101,7 +117,7 @@ export default function CreateProject() {
 
       toast.success(
         <div>
-          Proyek berhasil dibuat!<br/>
+          Proyek "{projectName}" berhasil dibuat!<br/>
           <a href={`https://sepolia.etherscan.io/tx/${createHash}`} target="_blank" rel="noreferrer" className="text-purple-400 underline text-xs mt-1 block">
             Lihat di Explorer ↗
           </a>
@@ -156,6 +172,19 @@ export default function CreateProject() {
         
         <div className="lg:col-span-3 bg-gray-900 rounded-3xl p-8 border border-gray-800 shadow-2xl">
           <div className="space-y-6">
+            
+            {/* New Project Name Field */}
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Project Name</label>
+              <input 
+                className="w-full bg-black border border-gray-700 p-3 rounded-xl text-white font-sans text-sm" 
+                placeholder="e.g. Website Redesign MVP" 
+                value={projectName} 
+                onChange={e => setProjectName(e.target.value)} 
+                maxLength={40}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm text-gray-300 mb-2">Worker Address</label>
@@ -215,8 +244,8 @@ export default function CreateProject() {
               ) : (
                 <button 
                   onClick={handleCreate} 
-                  disabled={isDeploying || !worker || !amount || !isValidPercentage} 
-                  className={`w-full px-4 py-4 rounded-xl font-bold transition-all ${isDeploying || !worker || !amount || !isValidPercentage ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200 cursor-pointer hover:scale-[1.02]'}`}
+                  disabled={isDeploying || !projectName || !worker || !amount || !isValidPercentage} 
+                  className={`w-full px-4 py-4 rounded-xl font-bold transition-all ${isDeploying || !projectName || !worker || !amount || !isValidPercentage ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200 cursor-pointer hover:scale-[1.02]'}`}
                 >
                   {isDeploying ? status : 'Lock Funds & Deploy Escrow'}
                 </button>
