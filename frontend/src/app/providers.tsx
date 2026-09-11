@@ -1,27 +1,37 @@
 'use client';
 import '@rainbow-me/rainbowkit/styles.css';
-import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
-import { WagmiProvider } from 'wagmi';
-import { polygonAmoy, sepolia } from 'wagmi/chains';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { configureChains, createConfig, WagmiConfig } from 'wagmi';
+import { polygonMumbai, sepolia } from 'wagmi/chains';
+import { publicProvider } from 'wagmi/providers/public';
+import { useEffect, useState } from 'react';
 
-const config = getDefaultConfig({
+const { chains, publicClient } = configureChains(
+  [polygonMumbai, sepolia],
+  [publicProvider()]
+);
+
+const { connectors } = getDefaultWallets({
   appName: 'TrustWork Escrow',
-  projectId: 'YOUR_PROJECT_ID', // Replace for production
-  chains: [polygonAmoy, sepolia],
-  ssr: true,
+  projectId: 'd5786c2e399e52fa955f0bd8ed692636', // Public dummy id for testing
+  chains
 });
 
-const queryClient = new QueryClient();
+const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors,
+  publicClient
+});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <WagmiConfig config={wagmiConfig}>
+      <RainbowKitProvider chains={chains}>
+        {mounted && children}
+      </RainbowKitProvider>
+    </WagmiConfig>
   );
 }

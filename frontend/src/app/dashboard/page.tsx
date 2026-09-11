@@ -1,5 +1,5 @@
 'use client';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useContractRead } from 'wagmi';
 import { TrustWorkABI } from '@/lib/TrustWorkABI';
 import { TRUSTWORK_ADDRESS } from '@/lib/config';
 import Link from 'next/link';
@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function Dashboard() {
   const { address } = useAccount();
   
-  const { data: projectCount } = useReadContract({
+  const { data: projectCount } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
     functionName: 'projectCount',
