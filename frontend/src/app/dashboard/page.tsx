@@ -50,7 +50,14 @@ export default function Dashboard() {
       });
 
       const fetchedProjects = [];
-      for (let i = 0; i < projectCount; i++) {
+      
+      // OPTIMIZATION: Reverse loop to get newest projects first.
+      // Limit to 10 newest projects to prevent RPC rate-limits and UI lag during MVP.
+      const MAX_PROJECTS_TO_FETCH = 10;
+      const startIndex = projectCount - 1;
+      const endIndex = Math.max(0, projectCount - MAX_PROJECTS_TO_FETCH);
+
+      for (let i = startIndex; i >= endIndex; i--) {
         try {
           const data = await client.readContract({
             address: TRUSTWORK_ADDRESS,
@@ -70,7 +77,7 @@ export default function Dashboard() {
       setProjectsData(fetchedProjects);
       
       if (fetchedProjects.length > 0) {
-        setActiveProjectId(fetchedProjects[fetchedProjects.length - 1].id);
+        setActiveProjectId(fetchedProjects[0].id); // Auto-expand the newest project
       }
     };
 
@@ -150,8 +157,8 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-white">Dashboard</h1>
           </header>
           <div className="glass-card rounded-2xl p-12 border border-white/5 border-dashed flex flex-col items-center justify-center text-center mt-20">
-            <div className="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-6">
-              <svg className="w-10 h-10 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            <div className="w-20 h-20 bg-purple-900/30 rounded-full flex items-center justify-center mb-6 border border-purple-500/30">
+              <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">Wallet Disconnected</h3>
             <p className="text-gray-400 max-w-md mx-auto mb-8">
@@ -261,9 +268,11 @@ export default function Dashboard() {
         </div>
 
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white">Your Active Projects</h2>
-            <span className="text-sm text-gray-500">Showing {projectsData.length} of {projectCount} Escrows</span>
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-white">Your Escrows</h2>
+              <span className="text-sm text-gray-500">Showing 10 most recent projects</span>
+            </div>
           </div>
           
           <div className="space-y-4">
