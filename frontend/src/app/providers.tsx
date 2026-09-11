@@ -2,18 +2,26 @@
 import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { configureChains, createConfig, WagmiConfig } from 'wagmi';
-import { polygonMumbai, sepolia } from 'wagmi/chains';
+import { sepolia } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
 import { useEffect, useState } from 'react';
 
 const { chains, publicClient } = configureChains(
-  [polygonMumbai, sepolia],
-  [publicProvider()]
+  [sepolia],
+  [
+    jsonRpcProvider({
+      rpc: (chain) => ({
+        http: 'https://ethereum-sepolia-rpc.publicnode.com',
+      }),
+    }),
+    publicProvider()
+  ]
 );
 
 const { connectors } = getDefaultWallets({
   appName: 'TrustWork Escrow',
-  projectId: 'd5786c2e399e52fa955f0bd8ed692636', // Public dummy id for testing
+  projectId: 'd5786c2e399e52fa955f0bd8ed692636',
   chains
 });
 
