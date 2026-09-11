@@ -185,7 +185,7 @@ export default function Home() {
             <span className="text-gray-500 text-sm">© 2026 TrustWork. Built for Blockdev.id Hackathon.</span>
           </div>
           <div className="flex gap-8 text-sm font-medium">
-            <a href="https://github.com/FarisAnugrah/TrustWork-Web3-Escrow-/blob/development/README.md" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors cursor-pointer">Documentation</a>
+            <Link href="/docs" className="text-gray-500 hover:text-white transition-colors cursor-pointer">Documentation</Link>
             <a href={`https://sepolia.etherscan.io/address/${TRUSTWORK_ADDRESS}`} target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors cursor-pointer">Smart Contract</a>
             <a href="https://github.com/FarisAnugrah/TrustWork-Web3-Escrow-" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-white transition-colors cursor-pointer">GitHub</a>
           </div>
