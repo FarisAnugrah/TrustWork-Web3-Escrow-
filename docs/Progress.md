@@ -34,6 +34,6 @@ Berikut adalah daftar file yang telah dibuat dalam folder `docs/`:
 - [x] Setup *repository* (Hardhat).
 - [x] Menulis kode `TrustWork.sol`.
 - [x] Menulis *test script* lokal untuk Smart Contract.
-- [ ] *Deploy* Smart Contract ke Testnet (Polygon Amoy / Sepolia).
+- [x] *Deploy* Smart Contract ke Testnet (Polygon Amoy / Sepolia).
 - [x] Setup Next.js + Tailwind + RainbowKit.
 - [x] Integrasi ABI Smart Contract ke Frontend.
