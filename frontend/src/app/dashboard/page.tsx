@@ -8,18 +8,22 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-  const { address } = useAccount();
+  const { address, isConnecting } = useAccount();
   const [loadingApprove, setLoadingApprove] = useState(false);
   const [draftMilestones, setDraftMilestones] = useState<any>(null);
   
-  const { data: projectCount } = useContractRead({
+  // State animasi masuk (transition screen)
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [initText, setInitText] = useState('Syncing with Blockchain...');
+  
+  const { data: projectCount, isFetched: countFetched } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
     functionName: 'projectCount',
     watch: true,
   });
 
-  const { data: project } = useContractRead({
+  const { data: project, isFetched: projectFetched } = useContractRead({
     address: TRUSTWORK_ADDRESS,
     abi: TrustWorkABI,
     functionName: 'projects',
@@ -42,6 +46,27 @@ export default function Dashboard() {
       try { setDraftMilestones(JSON.parse(saved)); } catch (e) {}
     }
   }, []);
+
+  // Efek Loading Keren sebelum masuk Dashboard
+  useEffect(() => {
+    if (isConnecting) {
+      setInitText('Connecting to Wallet...');
+      return;
+    }
+    
+    setInitText('Loading Smart Contract State...');
+    
+    const timer = setTimeout(() => {
+      setInitText('Decrypting Escrow Data...');
+      
+      const timer2 = setTimeout(() => {
+        setIsInitializing(false);
+      }, 800);
+      return () => clearTimeout(timer2);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [isConnecting, address]);
 
   const handleApproveMilestone = async () => {
     try {
@@ -85,8 +110,21 @@ export default function Dashboard() {
 
   const isCompleted = project && (project as any)[4] === 3;
 
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-900/20 rounded-full blur-[100px] animate-pulse"></div>
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-gray-800 border-t-purple-500 rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+          <h2 className="text-xl font-mono text-purple-400 font-bold tracking-widest mb-2">TRUSTWORK SYSTEM</h2>
+          <p className="text-gray-500 text-sm animate-pulse">{initText}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto selection:bg-purple-900">
+    <div className="min-h-screen bg-black text-white p-6 md:p-12 relative pointer-events-auto selection:bg-purple-900 animate-in fade-in duration-700">
       <div className="absolute top-0 right-0 w-[40%] h-[30%] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="max-w-6xl mx-auto relative z-10">
